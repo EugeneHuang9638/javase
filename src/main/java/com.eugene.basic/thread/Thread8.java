@@ -6,6 +6,13 @@ package com.eugene.basic.thread;
  * join方法: 两个api, 一个是无限制等待另一个是有限制等待
  *
  * join方法本质: 让 "当前线程" 等待 调用join的线程先执行
+ *
+ * 当前线程及是某个线程调用join方法的环境下, 比如在如下case:
+ *   在线程addThread的run方法中创建了threads线程并启动了它, 并且thread2调用了它自己的join方法,
+ *   所以当前线程指的是addThread线程, 所以addThread线程必须等待thread2线程执行结束后才能干自己
+ *   的事。
+ *
+ * 静态yield()方法: 使当前线程让出cpu的使用权限, 回到就绪队列和其他线程一起争夺cpu的使用权
  */
 public class Thread8 {
 
