@@ -4,8 +4,28 @@ public class Children extends Parent {
 
     String code = "children";
 
+    static int test = 1;
+
+    static {
+        System.out.println("子类静态代码块");
+    }
+
+    {
+        System.out.println("子类代码块");
+    }
+
+
     public void join() {
         System.out.println(this.code);
         this.test();
     }
+
+    protected void test() {
+        super.test();
+    }
+
+    public Children() {
+        System.out.println("子类构造方法");
+    }
+
 }
