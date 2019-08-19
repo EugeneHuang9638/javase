@@ -21,6 +21,6 @@ public class Thread3 {
         };
 
         thread1.start();
-        thread1.interrupt(); // 尽管设置了中断状态, 但是线程并不会停止, 要想将线程停止需要将16行注释去掉
+        thread1.interrupt(); // 尽管设置了中断状态, 但是线程并不会停止, 要想将线程停止需要将18行注释去掉
     }
 }

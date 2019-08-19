@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 测试并发包 api: ReentrantLock
- *   ReentrantLock: 重入锁, 相比synchronized更灵活，同一个线程可以反复获取锁
+ *   ReentrantLock: 重入锁, 相比synchronized更灵活，显示的添加/释放锁, 同一个线程可以反复获取锁, 并可以响应中断
  *   重入锁实现的三要素:
  *     1. 原子状态: 使用CAS操作来存储当前锁的状态, 判断锁是否被别的线程持有
  *     2. 等待队列: 所有没有请求到锁的线程会进入等待队列进行等待。
