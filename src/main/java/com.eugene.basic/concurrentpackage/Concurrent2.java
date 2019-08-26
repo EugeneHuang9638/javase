@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 后有ReentrantLock和Condition配套使用控制线程的等待与执行
  *
  * Condition await()和signal()和ReentrantLock配套使用步骤
- *   1. condition是由ReentrantLock对象的实例方法newCondition()
+ *   1. condition是由ReentrantLock对象的实例方法newCondition()创建
  *   2. 使用condition.await()方式阻塞线程时, 要求当前线程拥有
  *      第一步骤所述的ReentrantLock对象的重入锁, 调用后当前线程会释放重入锁
  *   3. 在唤醒上述第二步阻塞的线程时(执行condition.signal()方法), 需要使
