@@ -181,7 +181,7 @@ public class ThreadOneFTF {
             public void run() {
                 while (resource > 0) {
                     try {
-                        // 线程1 若无拿到lock的锁, 就会在此阻塞
+                        // 线程1拿到lock的锁, 线程2和3等待
                         lock.lock();
 
                         if (controller != 1) {
@@ -194,8 +194,12 @@ public class ThreadOneFTF {
                                 break;
                             }
                         }
+
+                        // 线程1输出完毕， 将控制权交给线程2, 并同时唤醒condition2(由lock创建出来的第一个condition, 因为此时有lock的锁，所以可以唤醒)
                         controller = 2;
                         condition2.signal();
+                        // 将锁释放，其它在获取重入锁阻塞的线程继续运行, 当controller不是自己的时候, 会进入对应condition的await方法。此时在这等待并释放lock锁，这样才能
+                        // 保证其它线程在自己的controller中进行运行
                         lock.unlock();
                     } catch (Exception e) {
                         e.printStackTrace();
