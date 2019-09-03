@@ -14,3 +14,11 @@ public class Test {
         System.out.println(1 & 7);
     }
 }
+
+
+class Test2 {
+
+    public static void main(String[] args) {
+        System.out.println(111);
+    }
+}
