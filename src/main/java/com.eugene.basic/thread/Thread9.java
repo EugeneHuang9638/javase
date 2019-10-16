@@ -46,7 +46,7 @@ public class Thread9 {
     }
 
 
-    private static boolean ready;
+    private static volatile boolean ready;
     private static int number;
 
     public static class ReaderThread extends Thread {
