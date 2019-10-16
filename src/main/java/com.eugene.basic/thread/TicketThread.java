@@ -3,6 +3,7 @@ package com.eugene.basic.thread;
 
 import org.openjdk.jol.info.ClassLayout;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -80,6 +81,8 @@ public class TicketThread extends Thread {
 
 class A {
     private boolean flag;
+    private boolean falg2;
+    private List<String> list;
 
     public static void main(String[] args) {
         System.out.println(ClassLayout.parseInstance(new A()).toPrintable());
@@ -97,7 +100,9 @@ class A {
          *
          * 对象头默认大小12byte, 一个boolean类型数据大小位1byte, 所以对象头 + 实例数据总大小位 13btye,
          * 此时不是8的倍数, 所以填充数据会填充3byte变成16byte(因为16是8的倍数),
-         * 所以类A的实例对象的内存大小位16byte
+         * 所以类A的实例对象的内存大小位16byte,
+         *
+         * ps: 引用类型的对象默认占4个字节
          */
     }
 }
