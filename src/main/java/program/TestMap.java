@@ -20,7 +20,7 @@ public class TestMap {
 
     public static void main(String[] args) {
         // 会报类型转型错误, Integer 不能直接转 Long
-        Long test = getKey("test");
+        long test = (long)((int) map.get("test"));
     }
 
     public static <T> T getKey(String key) {
