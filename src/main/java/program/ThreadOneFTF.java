@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *        其他在lock方法阻塞的线程不知道会执行哪个一个! 这都是随机的。
  * 方法2: 使用线程池和信号量来控制(信号量设置为1, 每次运行一个, 线程池中放入三个线程)
  * 方法3: 使用重入锁的Condition特性完美控制线程运行顺序
+ * 方法4: 使用volatile关键字控制线程按规则执行
  */
 public class ThreadOneFTF {
 
@@ -267,6 +268,51 @@ public class ThreadOneFTF {
             new Thread(new Thread111()).start();
             new Thread(new Thread222()).start();
             new Thread(new Thread333()).start();
+        }
+    }
+
+
+    private static volatile int model = 1;
+    private static volatile int resourcesInner = 45;
+    static class Method4 {
+        static void start() {
+            new Thread(() -> {
+                while (resourcesInner > 0) {
+                    if (model == 1 && resourcesInner > 0) {
+                        System.out.println("线程1: " + resourcesInner);
+                        if (resourcesInner-- % 5 == 1) {
+                            model = 2;
+                        }
+                    }
+                }
+            }).start();
+
+            new Thread(() -> {
+                while (resourcesInner > 0) {
+                    if (model == 2 && resourcesInner > 0) {
+                        System.out.println("线程2: " + resourcesInner);
+                        if (resourcesInner-- % 5 == 1) {
+                            model = 3;
+                        }
+                    }
+                }
+            }).start();
+
+            new Thread(() -> {
+                while (resourcesInner > 0) {
+                    if (model == 3 && resourcesInner > 0) {
+
+                        System.out.println("线程3: " + resourcesInner);
+                        if (resourcesInner-- % 5 == 1) {
+                            model = 1;
+                        }
+                    }
+                }
+            }).start();
+        }
+
+        public static void main(String[] args) {
+            start();
         }
     }
 
