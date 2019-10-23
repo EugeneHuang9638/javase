@@ -41,6 +41,11 @@ import java.util.concurrent.locks.Lock;
  *
  * AQSMySimpleReentryLock: 是一种简单可重入性的独占模式的锁
  *
+ *
+ * 非公平锁(性能高一些):
+ *   1. 直接插队获取锁
+ *   2. 不管是公平锁还是非公平锁, 一朝排队，永远排队。 也就是说非公平锁在acquire时, 若失败, 则进队
+ *
  */
 public class AQSMySimpleReentryLock implements Lock {
 
@@ -66,6 +71,8 @@ public class AQSMySimpleReentryLock implements Lock {
             int state = getState();
 
             if (state == 0) {
+                // 此处不应该直接给当前线程加锁, 因为有可能当前线程进入队列的时候, 前面还有很多线程在排队
+                // 这样的写法 证明这把锁是非公平的: 因为是上来就直接加锁, 不需要考虑前面是否有线程在排队
                 if (compareAndSetState(0, arg)) {
                     // 设置当前线程占有资源(独占模式)
                     setExclusiveOwnerThread(Thread.currentThread());
