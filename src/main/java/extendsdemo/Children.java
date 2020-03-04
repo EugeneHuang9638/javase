@@ -21,11 +21,15 @@ public class Children extends Parent {
     }
 
     protected void test() {
-        super.test();
+        System.out.println("子类test方法");
     }
 
     public Children() {
         System.out.println("子类构造方法");
+    }
+
+    public void run() {
+        System.out.println("子类run方法");
     }
 
 }

@@ -3,7 +3,10 @@ package extendsdemo;
 public class Test {
 
     public static void main(String[] args) {
-        new Children();
+        Person person = new Children();
+
+        // 此时的person是一个子类的具体对象，调用run方法时当然只调用自己的，父类的方法不显示使用super则不会调用
+        person.run();
 
         // 右移 除以2的n次方
         System.out.println(100 >> 3);

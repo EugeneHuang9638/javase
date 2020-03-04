@@ -1,6 +1,6 @@
 package extendsdemo;
 
-public class Parent {
+public class Parent implements Person {
 
     String code = "parent";
 
@@ -15,10 +15,16 @@ public class Parent {
     }
 
     protected void test() {
-        System.out.println(this.code);
+        System.out.println("父类test方法: " + this.code);
     }
 
     public Parent() {
         System.out.println("父类构造方法");
     }
+
+    @Override
+    public void run() {
+        System.out.println("父类 run方法");
+    }
+
 }
