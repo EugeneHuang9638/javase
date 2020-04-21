@@ -64,5 +64,16 @@ public class Collections1 {
         });
         System.out.println("定制排序后：");
         System.out.println(arrayList);
+
+        ArrayList<Integer> list = new ArrayList(5);
+        System.out.println(list.size());
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(2, 4);
+        Collections.synchronizedList(list);
+
     }
 }

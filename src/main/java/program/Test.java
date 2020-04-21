@@ -1,5 +1,7 @@
 package program;
 
+import java.util.ArrayList;
+
 public class Test {
 
     public static void updateUser(User user) {
@@ -23,6 +25,11 @@ public class Test {
         Test.updateUser(user);
         System.out.println(user);
 
+
+        ArrayList list = new ArrayList(101);
+        list.add("1");
+        list.set(6, 1);
+        System.out.println(list.size());
     }
 }
 

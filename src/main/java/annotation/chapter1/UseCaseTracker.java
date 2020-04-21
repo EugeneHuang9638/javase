@@ -7,6 +7,7 @@ import java.util.List;
 
 public class UseCaseTracker {
 
+
     public static void trackUseCases(List<Integer> useCases, Class<?> cl) {
         for (Method method : cl.getDeclaredMethods()) {
             UseCase useCase = method.getAnnotation(UseCase.class);
