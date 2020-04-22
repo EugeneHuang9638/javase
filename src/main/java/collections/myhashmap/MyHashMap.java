@@ -1,8 +1,5 @@
 package collections.myhashmap;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * HashMap原理： 数组 + 链表
  *
@@ -183,7 +180,7 @@ public class MyHashMap<K, V> {
      * @param args
      */
     public static void main(String[] args) {
-        /*MyHashMap<String, String> myHashMap = new MyHashMap<>();
+        MyHashMap<String, String> myHashMap = new MyHashMap<>();
         for (int i = 0; i < 20; i++) {
             // 对应的hashcode
             int hashcode = (i + "").hashCode();
@@ -194,10 +191,7 @@ public class MyHashMap<K, V> {
         // 可以对应查看下myHashMap的数据结构，0和11的key对应的index都为0，利用、
         // jdk1.7 的头插法特性，可以确认下，11是否在0的前面
         myHashMap.get("0");
-        System.out.println(myHashMap.size());*/
+        System.out.println(myHashMap.size());
 
-        Map<String, Object> map = new HashMap();
-        map.put(null, "111");
-        System.out.println(111);
     }
 }
