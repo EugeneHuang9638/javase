@@ -5,7 +5,7 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
-public class UnsafeTest {
+public class UnsafeOperateObjectTest {
 
 
     public static void testNoCAS(final User user) {
