@@ -20,3 +20,5 @@ javase basic
 * ThreadPool: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/threadpool](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/threadpool)
 
 * JAVA SPI: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/spi](https://github.com/AvengerEug/javase/tree/develop/src/main/java/spi)
+
+* JVM:  [https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm)
