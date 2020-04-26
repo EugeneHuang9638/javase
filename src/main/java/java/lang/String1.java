@@ -1,6 +1,9 @@
 package java.lang;
 
-public class String {
+/**
+ * 这里把String 改成String1了，否则其他使用String的类编译不过
+ */
+public class String1 {
 
     public static void main(String[] args) {
         /**
@@ -20,4 +23,5 @@ public class String {
          */
         System.out.println("Hell RootClassLoader");
     }
+
 }
