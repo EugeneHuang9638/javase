@@ -132,17 +132,66 @@
 ## 七、以jvm的角度来查看常见的几个面试题
 
 * Q: String str = "a" + "b"; 一共创建了几个对象？
-* A:
+
+* A: 一个字符串常量"ab"和一个str引用变量，下图为jvm进行处理的原理
+
+  ![字符串a+b.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/字符串a+b.png)
 
 ---
 
-* Q: 泛型擦除
-* A: 
+* Q:
+
+  ```java
+  String a = "a";
+  String b = "b";
+  a = a + b;
+  
+  一共创建了几个对象？String和StringBuffer的区别？
+  ```
+
+* A: 创建了 3个对象, "a", "b"和一个jvm内部创建的`StringBuild`对象，以及a，b两个引用对象. 所以一共创建了5个对象。
+
+  在jvm内部中, 两个字符串对象做拼接，jvm底层会创建一个StringBuild，使用它的append方法做拼接。具体看下图: 
+
+  ![jvm将String拼接转化成StringBuild.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/jvm将String拼接转化成StringBuild.png)
+
+---
+
+* Q: 泛型什么时候会被编译擦除？
+
+* A: 在实例方法(局部方法)中定义的变量会被泛型擦除.
+
+  测试代码:
+
+  ```java
+  package jvm;
+  
+  import java.util.HashMap;
+  import java.util.Map;
+  
+  public class Test<Object> {
+  
+  
+      Map<String, String> map = new HashMap<>();
+  
+  
+      public static void main(String[] args) {
+          Map<String, String> mapInner = new HashMap<>();
+      }
+  }
+  
+  ```
+
+  使用`javap`反编译成指令后的结果:
+
+  ![泛型擦除.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/泛型擦除.png)
+
+  **结论: 当泛型一定在类上、实例变量上时，它的泛型不会被jvm擦除，但是定义在方法内部的泛型将会被擦除**
 
 ---
 
 * Q: try catch时，finally块一定会执行么？
-* A: 
+* A: 程序正常运行时，以及正常退出时肯定会被执行。但是如果手动执行`System.exit(0)`代码以及在执行finally代码块之前把进程kill掉了，那就不会被执行了
 
 ## jvm工具
 

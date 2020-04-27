@@ -9,6 +9,7 @@ public class HeapMemory {
     private char[] chars = new char[1024 * 100];
 
     public static void main(String[] args) throws InterruptedException {
+
         System.out.println("Starting");
         List<HeapMemory> list = new ArrayList();
         for (int i = 0; i < 1000; i++) {
