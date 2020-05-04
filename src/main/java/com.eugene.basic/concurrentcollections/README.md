@@ -264,7 +264,7 @@
       // 在高并发情况下，如果tryLock()方法返回的true，即加锁成功
       // 可以放心的处理后面的逻辑了。如果加锁失败，又会采用自旋的
       // 策略进行加锁
-      HashEntry<K,V> node = tryLock() ? null :
+      HashEntry<K,V> listNode = tryLock() ? null :
       scanAndLockForPut(key, hash, value);
       V oldValue;
       try {
@@ -295,20 +295,20 @@
                   e = e.next;
               }
               else {
-                  // TODO node ！= null的情况为获取锁失败，即在高并发的情况下，待总结
-                  if (node != null)
-                      node.setNext(first);
+                  // TODO listNode ！= null的情况为获取锁失败，即在高并发的情况下，待总结
+                  if (listNode != null)
+                      listNode.setNext(first);
                   else
                       // 如果指定位置上没有值，则新new一个
-                      node = new HashEntry<K,V>(hash, key, value, first);
+                      listNode = new HashEntry<K,V>(hash, key, value, first);
                   // 将ConcurrentHashMap的数量 + 1
                   int c = count + 1;
                   // 判断是否需要扩容
                   if (c > threshold && tab.length < MAXIMUM_CAPACITY)
-                      rehash(node);
+                      rehash(listNode);
                   else
                       // 使用UNSAFE将新增的元素放在指定位置上
-                      setEntryAt(tab, index, node);
+                      setEntryAt(tab, index, listNode);
                   ++modCount;
                   count = c;
                   oldValue = null;
