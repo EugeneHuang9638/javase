@@ -1,5 +1,7 @@
 package leetcode;
 
+import leetcode.model.ListNode;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +13,7 @@ import java.util.List;
  *
  *
  */
-public class ReverseList {
+public class ReverseListNode {
 
     /**
      * 时间复杂度为:
@@ -96,17 +98,6 @@ public class ReverseList {
         listNode4.next = listNode5;
 
         System.out.println(reverseList2(listNode1));
-    }
-
-
-    private static class ListNode {
-        int val;
-        ListNode next;
-
-        public ListNode(int val) {
-            this.val = val;
-        }
-
     }
 
 }

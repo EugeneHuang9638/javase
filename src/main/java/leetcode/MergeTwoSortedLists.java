@@ -1,5 +1,7 @@
 package leetcode;
 
+import leetcode.model.ListNode;
+
 /**
  * 题目: 合并两个有序链表
  * 分析: 题目中已经标明了是两个有序的链表了
@@ -112,23 +114,6 @@ public class MergeTwoSortedLists {
 
         // 获取preHead的下一个，因为第一个为-1，用来连接节点时使用的
         return preHead.next;
-    }
-
-    private static class ListNode {
-        int val;
-        ListNode next;
-
-        public ListNode(int val) {
-            this.val = val;
-        }
-
-        @Override
-        public String toString() {
-            return "ListNode{" +
-                    "val=" + val +
-                    ", next=" + next +
-                    '}';
-        }
     }
 
 }
