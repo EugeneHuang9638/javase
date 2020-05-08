@@ -38,6 +38,54 @@ public class HasCycle {
     }
 
 
+    /**
+     * 龟兔赛跑的模式
+     * 定义两个指针，
+     * 一个指针走一步
+     * 另外一个指针走两步
+     * 当链表遍历结束后，这两个指针没有相遇的话，则表示没有环
+     * 若相遇了则表示有环
+     *
+     *
+     * 注意点: 快慢指针都是基于自己的那个链表走
+     * 所以初始时，需要将head赋值给快慢指针
+     * 在遍历head的同时，快慢指针自己想前走
+     * 快指针走两步，慢指针走一步
+     * 若在head遍历的情况下，快慢指针相遇了(hashCode一样)
+     * 那么则表示有环
+     *
+     * 否则无环
+     *
+     * @param head
+     * @return
+     */
+    public static boolean hasCycle2(ListNode head) {
+
+        if (head == null || head.next == null) {
+            return false;
+        }
+
+        ListNode fast = head;
+        ListNode slow = head;
+
+        while (head.next != null) {
+            // 快指针走两步
+            fast = fast.next.next;
+
+            // 慢指针走一步
+            slow = slow.next;
+
+            if (fast.hashCode() == slow.hashCode()) {
+                return true;
+            }
+
+            head = head.next;
+        }
+
+        return false;
+    }
+
+
     public static void main(String[] args) {
         ListNode node5 = new ListNode(5);
         ListNode node4 = new ListNode(4);
@@ -52,6 +100,6 @@ public class HasCycle {
         // 创建环:
         node5.next = node3;
 
-        System.out.println(hasCycle(node1));
+        System.out.println(hasCycle2(node1));
     }
 }
