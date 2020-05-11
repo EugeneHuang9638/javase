@@ -199,4 +199,5 @@
     |         MyStack.java          | [用队列实现栈](https://leetcode-cn.com/problems/implement-stack-using-queues/) | 队列           | 简单 | 2020/05/08 | 用队列实现一个栈，leetcode的225题。具体参考`MyStack.java`类  |
     |        KthLargest.java        | [数据流中的第K大元素](https://leetcode-cn.com/problems/kth-largest-element-in-a-stream/) | 队列(优先队列) | 简单 | 2020/05/09 | 设计一个类，找出数据流中的第k大的元素。具体参考`KthLargest.java`类 |
     |     MaxSlidingWindow.java     | [滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/) | 滑动窗口       | 困难 | 2020/05/10 |       leetcode239题。具体参考`MaxSlidingWindow.java`类       |
+    |     MaxSlidingWindow.java     | [滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/) | 滑动窗口       | 困难 | 2020/05/11 | 继续昨天的**滑动窗口最大值**题目，目前时间复杂度比较差，在leetcode中执行的时间比较长，但结果是正确的。`优化方面日后再做吧！` |
 
