@@ -176,9 +176,24 @@
   |  二分查找  | $$O(log_2n)$$ |
   | 二叉树遍历 |     O(n)      |
 
+
+### 2.5 常见数据结构之Hash表
+
+* 基础知识：
+
+  ```txt
+  所谓hash表，即是用key算出它的hash值，然后对表中的长度取模，最终得到一个值，此值就是该key对应的下标。所以使用此算法来存储值的话，那么必然会存在如下的几个问题：
+  1. Hash碰撞: 所谓hash碰撞即不同的key最终算出来存储在表中的index是一样的，而上述所谓的表其实就是一个数组，数组中的每个下标只能存储一个值。所以要处理hash碰撞的情况的话，那么就必须在数组中的每个元素中以链表的形式来存值，
+  即所谓的拉链法(数组 + 链表)
+  2. 若产生了Hash碰撞，并且这个key之前已经设置过了，如果要采取覆盖的策略。此时我们要重写equals方法来判断key是否相等。
   
+  综上所述，我们似乎已经能明白为什么要重写hash和equals方法了吧？
+  就拿Hash表来说，我们需要hash来计算它要防止那一块内存中，同时还要使用equals来判断链表中是否有相同的key
+  ```
 
+* hash表原理图
 
+  ![hash表原理图](https://github.com/AvengerEug/javase/tree/develop/src/main/java/leetcode/hash表原理.png)
 
 ## 三、每日打卡leetcode
 * 规则: 根据leetcode的每日一题进行打卡
@@ -200,4 +215,6 @@
     |        KthLargest.java        | [数据流中的第K大元素](https://leetcode-cn.com/problems/kth-largest-element-in-a-stream/) | 队列(优先队列) | 简单 | 2020/05/09 | 设计一个类，找出数据流中的第k大的元素。具体参考`KthLargest.java`类 |
     |     MaxSlidingWindow.java     | [滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/) | 滑动窗口       | 困难 | 2020/05/10 |       leetcode239题。具体参考`MaxSlidingWindow.java`类       |
     |     MaxSlidingWindow.java     | [滑动窗口最大值](https://leetcode-cn.com/problems/sliding-window-maximum/) | 滑动窗口       | 困难 | 2020/05/11 | 继续昨天的**滑动窗口最大值**题目，目前时间复杂度比较差，在leetcode中执行的时间比较长，但结果是正确的。`优化方面日后再做吧！` |
+    |       ValidAnagram.java       | [有效的字母异位词](https://leetcode-cn.com/problems/valid-anagram/) | 哈希表         | 简单 | 2020/05/12 |        leetcode`242`题。具体参考`ValidAnagram.java`类        |
+    |          TwoSum.java          |    [两数之和](https://leetcode-cn.com/problems/two-sum/)     | 哈希表         | 简单 | 2020/05/12 |           leetcode第一题。具体参考`TwoSum.java`类            |
 
