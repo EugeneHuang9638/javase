@@ -225,4 +225,5 @@
     |          TwoSum.java          |    [两数之和](https://leetcode-cn.com/problems/two-sum/)     | 哈希表         | 简单 | 2020/05/12 |           leetcode第一题。具体参考`TwoSum.java`类            |
     |         ThreeSum.java         |      [三数之和](https://leetcode-cn.com/problems/3sum/)      | 哈希表         | 中等 | 2020/05/13 | leetcode第15题。具体参考`ThreeSum.java`类。在leetcode的运行结果中，有一种case为输出一个空数组，但是leetcode 的期望结果是一个空数组，但是方法的返回值是LIst<List<Integer>>,所以没法输出它期待的打印结果。不过没关系，解题思路有了就行了！此提的解题思路和上述的`两数之和`类似，先变量表达式的前面部分，最后一部分从map(key为数组的value，value为数组的index)中去查找，同时要注意map中value的重复使用，同时还要注意拆箱过程中的空指针异常。 |
     |       TraverseTree.java       |                    自己写的遍历二叉查找树                    | 树             | 简单 | 2020/05/13 | 自己使用递归实现了二叉查找树的先序遍历、中序遍历、后序遍历的算法。集体参考`TraverseTree.java`类 |
+    |         ValidBST.java         | [验证二叉搜索树](https://leetcode-cn.com/problems/validate-binary-search-tree/) | 树             | 中等 | 2020/05/14 | 验证一颗树是不是二叉查找树。leetcode 98题。具体参考`ValidBST.java`类 |
 

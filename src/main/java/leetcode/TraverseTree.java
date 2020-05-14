@@ -30,12 +30,12 @@ public class TraverseTree {
         // 存储根节点
         list.add(root.val);
 
-        if (root.leftNode != null) {
-            list.addAll(preorder(root.leftNode));
+        if (root.left != null) {
+            list.addAll(preorder(root.left));
         }
 
-        if (root.rightNode != null) {
-            list.addAll(preorder(root.rightNode));
+        if (root.right != null) {
+            list.addAll(preorder(root.right));
         }
 
         return list;
@@ -47,14 +47,14 @@ public class TraverseTree {
             return list;
         }
 
-        if (root.leftNode != null) {
-            list.addAll(inorder(root.leftNode));
+        if (root.left != null) {
+            list.addAll(inorder(root.left));
         }
 
         list.add(root.val);
 
-        if (root.rightNode != null) {
-            list.addAll(inorder(root.rightNode));
+        if (root.right != null) {
+            list.addAll(inorder(root.right));
         }
 
         return list;
@@ -68,13 +68,13 @@ public class TraverseTree {
         }
 
         // 存储左节点
-        if (root.leftNode != null) {
-            list.addAll(postorder(root.leftNode));
+        if (root.left != null) {
+            list.addAll(postorder(root.left));
         }
 
         // 处理右节点
-        if (root.rightNode != null) {
-            list.addAll(postorder(root.rightNode));
+        if (root.right != null) {
+            list.addAll(postorder(root.right));
         }
 
         // 处理根节点
