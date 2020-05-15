@@ -17,7 +17,7 @@ javase basic
 
 * Volatile: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/volatilestudy](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/volatilestudy)
 
-* ThreadPool: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/threadpool](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/threadpool)
+* Thread: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/thread](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/thread)
 
 * JAVA SPI: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/spi](https://github.com/AvengerEug/javase/tree/develop/src/main/java/spi)
 
