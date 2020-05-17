@@ -27,7 +27,7 @@
 
 * 如图
 
-  ![双亲委派机制.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/双亲委派机制.png)
+  ![双亲委派机制.png](./双亲委派机制.png)
 
 * 双亲委派机制有一个规则：`每一个类加载器只能做自己的工作，假设我们想让BootstrapClassLoader来加载classpath路径下的某个类，这是行不通的(正常情况下)`
 
@@ -65,7 +65,7 @@
 
 * 结构图
 
-  ![jvm内存模型.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/jvm内存模型.png)
+  ![jvm内存模型.png](./jvm内存模型.png)
 
 * 整理下jvm线程私用的内存结构
 
@@ -85,7 +85,7 @@
 
 * 结构图
 
-  ![jvm堆内存结构.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/jvm堆内存结构.png)
+  ![jvm堆内存结构.png](./jvm堆内存结构.png)
 
 * 测试JVM堆内存
 
@@ -119,15 +119,15 @@
 
     * 整体堆内存
 
-      ![堆内存飙升.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/堆内存飙升.png)
+      ![堆内存飙升.png](./堆内存飙升.png)
 
     * Eden区
 
-      ![eden区内存情况.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/eden区内存情况.png)
+      ![eden区内存情况.png](./eden区内存情况.png)
 
     * 老年代
 
-      ![老年代.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/老年代.png)
+      ![老年代.png](./老年代.png)
 
 ## 七、以jvm的角度来查看常见的几个面试题
 
@@ -135,7 +135,7 @@
 
 * A: 一个字符串常量"ab"和一个str引用变量，下图为jvm进行处理的原理
 
-  ![字符串a+b.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/字符串a+b.png)
+  ![字符串a+b.png](./字符串a+b.png)
 
 ---
 
@@ -153,7 +153,7 @@
 
   在jvm内部中, 两个字符串对象做拼接，jvm底层会创建一个StringBuild，使用它的append方法做拼接。具体看下图: 
 
-  ![jvm将String拼接转化成StringBuild.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/jvm将String拼接转化成StringBuild.png)
+  ![jvm将String拼接转化成StringBuild.png](./jvm将String拼接转化成StringBuild.png)
 
 ---
 
@@ -184,7 +184,7 @@
 
   使用`javap`反编译成指令后的结果:
 
-  ![泛型擦除.png](https://github.com/AvengerEug/javase/tree/develop/src/main/java/jvm/泛型擦除.png)
+  ![泛型擦除.png](./泛型擦除.png)
 
   **结论: 当泛型一定在类上、实例变量上时，它的泛型不会被jvm擦除，但是定义在方法内部的泛型将会被擦除**
 
