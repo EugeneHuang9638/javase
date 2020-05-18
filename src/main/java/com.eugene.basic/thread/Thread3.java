@@ -8,12 +8,25 @@ package com.eugene.basic.thread;
  */
 public class Thread3 {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Thread thread1 = new Thread() {
             @Override
             public void run() {
-                while (true) {
-                    System.out.println("current thread");
+                while (!this.isInterrupted()) {
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        // 线程因sleep进入waitting状态时，
+                        // 当调用线程的interrupt方法，此时会抛出
+                        // InterruptedException异常，同时
+                        // 又会另外将线程的interrupt标志设置为false
+                        System.out.println(this.isInterrupted());
+                        e.printStackTrace();
+
+                        // 此时还需要标识线程状态为interrupt才会正常结束循环
+                        this.interrupt();
+                    }
 
                     //if (this.isInterrupted()) break;
                 }
@@ -21,6 +34,8 @@ public class Thread3 {
         };
 
         thread1.start();
-        thread1.interrupt(); // 尽管设置了中断状态, 但是线程并不会停止, 要想将线程停止需要将18行注释去掉
+        Thread.sleep(500);
+        // 设置了中断状态, 若线程在睡眠，则会抛出InterruptedException异常
+        thread1.interrupt();
     }
 }

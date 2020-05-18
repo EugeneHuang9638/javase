@@ -7,6 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 测试并发下的HashMap
  * HashMap也是线程不安全的
+ *
+ * 虽然jdk1.8的hashMap解决了1.7扩容在并发情况下的出现环的问题，
+ * 但是它本身还是线程不安全的
+ *
  */
 public class Thread14 {
 

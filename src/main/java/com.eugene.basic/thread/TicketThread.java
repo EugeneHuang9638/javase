@@ -53,11 +53,13 @@ public class TicketThread extends Thread {
             // 使用某个类的Class类作为锁 则表示该类的所有对象都适用这把锁
             synchronized(TicketThread.class) {
                 try {
+                    TicketThread.class.notifyAll();
                     if (index <= MAX_INDEX) {
                         //
-                        TimeUnit.MINUTES.sleep(2);
+                        TimeUnit.SECONDS.sleep(1);
                         System.out.println(Thread.currentThread().getName() + "线程叫号: " + index++);
                     }
+                    TicketThread.class.wait();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
