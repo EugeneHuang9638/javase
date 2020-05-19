@@ -1,6 +1,4 @@
-package com.eugene.basic.concurrentpackage;
-
-import org.omg.CORBA.PUBLIC_MEMBER;
+package com.eugene.basic.concurrency.concurrentpackage;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;

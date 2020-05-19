@@ -1,4 +1,4 @@
-package com.eugene.basic.concurrentpackage;
+package com.eugene.basic.concurrency.concurrentpackage;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

@@ -1,4 +1,4 @@
-package com.eugene.basic.aqs;
+package com.eugene.basic.concurrency.aqs;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;

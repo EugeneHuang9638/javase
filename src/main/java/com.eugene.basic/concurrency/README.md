@@ -1,3 +1,7 @@
+
+
+[TOC]
+
 # java并发编程
 
 ## 一、java线程与操作系统(centos 7 64位，以下简称centos)的关系
@@ -14,7 +18,7 @@
   man pthread_create
   ```
 
-  ![pthread_create](pthread_create.png)
+  ![pthread_create](../thread/pthread_create.png)
 
 ### 1.2 使用os的api(pthread_create)创建一个线程
 
@@ -62,13 +66,13 @@
 
 * 执行结束后可以发现线程每隔1s就打印`Execting run function` 并输出123
 
-  ![pthread_create_run_result](pthread_create_run_result.png)
+  ![pthread_create_run_result](../thread/pthread_create_run_result.png)
 
   
 
   那我们要怎么去证明这个是**线程**还是**进程**呢？见下图
 
-  ![find_thread.png](find_thread.png)
+  ![find_thread.png](../thread/find_thread.png)
 
 ### 1.3 java中的线程和pthread_create有什么关系？
 
@@ -229,7 +233,7 @@
 
   运行结果：
 
-  ![call_customize_native_method.png](call_customize_native_method.png)
+  ![call_customize_native_method.png](../thread/call_customize_native_method.png)
 
   **完美！**我们成功的使用java应用程序调用了我们自定义的native方法。可是，我们在用java创建一个线程时，通常是要自己重写run方法，当我们启动线程时，调用的是start方法。刚刚我们证明了，native方法就是会调用到操作系统的一个c文件，如果要调用到run方法，那么我们就必须要通过c来调用到java中的方法。那我们接下来尝试着使用c文件来调用java代码
 
@@ -313,7 +317,7 @@
 
 * 运行结果：
 
-  ![c_call_java_method.png](c_call_java_method.png)
+  ![c_call_java_method.png](../thread/c_call_java_method.png)
 
   **牛逼！**
 
@@ -784,7 +788,7 @@
 
 ### 2.3 线程状态转换图
 
-* ![线程状态转换图](线程状态转换图.png)
+* ![线程状态转换图](../thread/线程状态转换图.png)
 
 ### 2.4 如何优雅的终止一个线程
 
@@ -840,4 +844,306 @@
 
   总而言之：**jvm不希望直接停止一个线程，而是希望线程要执行结束。**那么我们要如何解决上述的情况二呢？我们可以使用`interrupt()`方法，假设一个线程执行此方法时，它会抛出`InterruptedException`异常(实际上是将线程标识成了**interrupt**状态，此时如果线程在执行过程中，发现它是处于**interrupt**状态，于是抛出了`InterruptedException`异常)，此时我们可以截取到这个异常然后执行一些`关闭资源`类似的操作
 
+
+## 三、java对象头
+
+### 3.1 对象头结构
+
+* 详见无锁状态下的对象信息
+
+  ![对象头结构.png](./对象头结构.png)
+
+* 详见其他几种状态下的对象信息（**偏向锁、轻量锁、重量锁、GC标识**）
+  ![其他几种状态下的对象头信息.png](./其他几种状态下的对象头信息.png)
+
+### 3.2 使用JOL查看对象头信息
+
+* 第一步：创建**User.java**类
+
+  ```java
+  package com.eugene.basic.concurrency.objectheader;
   
+  public class User {
+  }
+  ```
+
+* 第二步：使用JOL API查看user对象的布局信息
+
+  ```java
+  package com.eugene.basic.concurrency.objectheader;
+  
+  import org.openjdk.jol.info.ClassLayout;
+  
+  /**
+   * 验证对象头hashCode信息
+   */
+  public class Valid {
+  
+      public static void main(String[] args) {
+          User user = new User();
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+      }
+  }
+  ```
+
+* 运行结果如下图所示：
+
+  ![jol查看对象头1.png](./jol查看对象头1.png)
+
+### 3.3 证明无锁状态下的对象头的前56位为hashcode
+
+#### 3.3.1 cpu的大小端模式
+
+* 为什么要总结这个呢？因为jol打印出来的一些对象信息里面有很多0101以及对应的十六进制的值。我们要知道hashcode存在哪，就要知道cpu的大小端模式。
+
+#### 3.3.2 何为大小端模式
+
+* 参考链接：[https://www.cnblogs.com/0YHT0/p/3403474.html](https://www.cnblogs.com/0YHT0/p/3403474.html)。大致总结为：**我们的数据是存在内存中的，而每个cpu对应的存储方式是不一致的。**所谓大端模式就是高位存在内存低位上，eg：假设要存储12345678这个数字时，8属于个位、7属于十位.....以此类推。那么，我们就能知道1是最高位，所以它会被存到内存的低位。拿上述链接的总结来说就是如下表所示：
+
+  |  内存地址  | 存储的数据（Byte） |
+  | :--------: | :----------------: |
+  | 0x00000000 |        0x12        |
+  | 0x00000001 |        0x34        |
+  | 0x00000002 |        0x56        |
+  | 0x00000003 |        0x78        |
+
+  大致意思就是这样。小端模式的话，相反的。这里就不总结了。那么问题来了，我们如何知道我们的cpu是大端存储模式还是小端存储模式呢？java提供了如下api：
+
+  ```java
+  // 输出结果参考如下内容：
+  // BIG_ENDIAN：大端模式
+  // LITTLE_ENDIAN: 小端模式
+  System.out.println(ByteOrder.nativeOrder().toString());
+  ```
+
+#### 3.3.3 证明hashcode
+
+* 接下来我们来证明前56位存储的hashcode。
+
+* 新建如下类
+
+  ```java
+  public class Valid {
+  
+      public static void main(String[] args) {
+          System.out.println(ByteOrder.nativeOrder().toString());
+  
+          User user = new User();
+          System.out.println("before hashcode");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+          // 将hashcode转成16进制，因为jol在输出的内容中包含16进制的值
+          System.out.println(Integer.toHexString(user.hashCode()));
+  
+          System.out.println("after hashcode");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+  
+      }
+  }
+  ```
+
+* 运行结果如下：
+
+  ![证明hashcode.png](./证明hashcode.png)
+
+### 3.4 证明mark word中的后8为分别存了锁信息、分代年龄
+
+#### 3.4.1 证明分代年龄
+
+* 针对上述代码做部分修改，得到如下代码：
+
+  ```java
+  public class Valid {
+  
+      public static void main(String[] args) {
+          System.out.println(ByteOrder.nativeOrder().toString());
+  
+          User user = new User();
+          System.out.println("before hashcode");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+          // 将hashcode转成16进制，因为jol在输出的内容中包含16进制的值
+          System.out.println(Integer.toHexString(user.hashCode()));
+  
+          System.out.println("after hashcode");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+  
+          System.out.println("after gc");
+          System.gc();
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+  
+      }
+  }
+  ```
+
+* 运行后的结果及分析如下：
+
+  ![证明占4bit的分代年龄.png](./证明占4bit的分代年龄.png)
+
+#### 3.4.2 证明无锁
+
+* 利用[3.1.4 证明分代年龄](####3.4.1 证明分代年龄)部分的图说明即可。可以看到黄色框框部分的后三位为`001`。`001`则表示为无锁，可参考[上述对象头结构图](###3.1 对象头结构)
+
+#### 3.4.3 证明轻量锁
+
+* 先解释下什么叫轻量锁：
+
+  ```txt
+  所谓轻量锁：有锁竞争，但不是那种频繁的竞争。
+  ```
+
+* 修改代码为如下内容：
+
+  ```java
+  public class Valid {
+  
+  
+      public static void main(String[] args) {
+          System.out.println(ByteOrder.nativeOrder().toString());
+  
+          User user = new User();
+          System.out.println("before lock");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+  
+          synchronized (user) {
+              System.out.println("lock ing");
+              System.out.println(ClassLayout.parseInstance(user).toPrintable());
+          }
+  
+          System.out.println("after lock");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+      }
+  }
+  ```
+
+* 运行结果即分析如下：
+
+  ![证明轻量级锁.png](./证明轻量级锁.png)
+
+#### 3.4.4 证明偏向锁
+
+* 其实吧，讲道理在[3.4.3 证明轻量锁](####3.4.3 证明轻量锁)中它应该是一把偏向锁，为什么呢？因为只有一个线程在占用这把锁，当前偏向于这个线程呀。是的，也没理解错。那为什么会出现这种情况呢？因为jvm在启动项目时做了一个优化！jvm把偏向锁的功能延迟了4s钟，即在jvm启动4s后再开始启用偏向锁。我们来证明下
+
+* 修改valid.java为如下代码：
+
+  ```java
+  public class Valid {
+  
+      public static void main(String[] args) throws InterruptedException {
+          Thread.sleep(4100);
+          
+          System.out.println(ByteOrder.nativeOrder().toString());
+          User user = new User();
+          System.out.println("before lock");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+  
+          synchronized (user) {
+              System.out.println("lock ing");
+              System.out.println(ClassLayout.parseInstance(user).toPrintable());
+          }
+  
+          System.out.println("after lock");
+          System.out.println(ClassLayout.parseInstance(user).toPrintable());
+      }
+  }
+  ```
+
+* 运行结果与分析如下：
+
+  ![证明偏向锁.png](./证明偏向锁.png)
+
+  **之前说过，偏向锁和hashcode是互斥的，大家可以在加锁之前调用hashcode，就会发现它不会变成偏向锁了！**
+
+#### 3.4.5 证明重量锁
+
+* 重量锁会存在多个线程抢占锁资源，所以我们写一个生产者消费者案例来证明
+
+* 添加如下类：
+
+  ```java
+  public class ValidSynchronized {
+  
+      static Object lock = new Object();
+  
+      static volatile LinkedList<String> queue = new LinkedList<>();
+  
+      public static void main(String[] args) throws InterruptedException {
+          System.out.println("before lock");
+          System.out.println(ClassLayout.parseInstance(lock).toPrintable());
+  
+          Consumer consumer = new Consumer();
+          Producer producer = new Producer();
+  
+          consumer.start();
+          producer.start();
+  
+          Thread.sleep(500);
+          consumer.interrupt();
+          producer.interrupt();
+  
+          // 睡眠0.5s ==> 目的是为了让锁自己释放，防止在释放过程中打印锁的状态出现重量锁的情况
+          Thread.sleep(500);
+          System.out.println("after lock");
+          System.out.println(ClassLayout.parseInstance(lock).toPrintable());
+      }
+  }
+  
+  class Producer extends Thread {
+  
+      @Override
+      public void run() {
+          while (!isInterrupted()) {
+              synchronized (ValidSynchronized.lock) {
+                  System.out.println("lock ing");
+                  System.out.println(ClassLayout.parseInstance(ValidSynchronized.lock).toPrintable());
+                  String message = UUID.randomUUID().toString();
+                  System.out.println("生产者生产消息：" + message);
+                  ValidSynchronized.queue.offer(message);
+                  try {
+                      // 生产者自己wait，目的是释放锁
+                      ValidSynchronized.lock.notify();
+                      ValidSynchronized.lock.wait();
+                      TimeUnit.SECONDS.sleep(1);
+                  } catch (InterruptedException e) {
+                      this.interrupt();
+                  }
+              }
+          }
+      }
+  }
+  
+  class Consumer extends Thread {
+  
+      @Override
+      public void run() {
+          while (!isInterrupted()) {
+              synchronized (ValidSynchronized.lock) {
+                  if (ValidSynchronized.queue.size() == 0) {
+                      try {
+                          ValidSynchronized.lock.wait();
+                          ValidSynchronized.lock.notify();
+                      } catch (InterruptedException e) {
+                          e.printStackTrace();
+                      }
+                  }
+                  String message = ValidSynchronized.queue.pollLast();
+                  System.out.println("消费者消费消息：" + message);
+  
+                  try {
+                      TimeUnit.SECONDS.sleep(1);
+                  } catch (InterruptedException e) {
+                      this.interrupt();
+                  }
+              }
+          }
+      }
+  }
+  ```
+
+* 运行结果及分析：
+
+  ![证明重量锁.png](./证明重量锁.png)
+
+#### 3.4.6 证明后得出的几个结论
+
+* **偏向锁和hashcode是互斥的，只能存在一个**。
+* **jvm默认对偏向锁功能是延迟加载的，大概时间为4s钟**，可以添加JVM参数： `-XX:BiasedLockingStartupDelay=0`来设置延迟时间。
+* **重量级锁之所以重量就是因为状态不停的切换，最终映射到代码层面就是不停的调用操作系统函数(最终会调用到jvm的mutex类)**

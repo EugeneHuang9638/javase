@@ -1,4 +1,4 @@
-package com.eugene.basic.concurrentcollections.unsafe;
+package com.eugene.basic.concurrency.concurrentcollections.unsafe;
 
 import sun.misc.Unsafe;
 

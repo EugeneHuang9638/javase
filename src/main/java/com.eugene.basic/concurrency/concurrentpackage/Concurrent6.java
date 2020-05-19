@@ -1,4 +1,4 @@
-package com.eugene.basic.concurrentpackage;
+package com.eugene.basic.concurrency.concurrentpackage;
 
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;

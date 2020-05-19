@@ -1,4 +1,4 @@
-package com.eugene.basic.concurrentcollections;
+package com.eugene.basic.concurrency.concurrentcollections;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 

@@ -1,4 +1,4 @@
-package com.eugene.basic.cas;
+package com.eugene.basic.concurrency.cas;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
