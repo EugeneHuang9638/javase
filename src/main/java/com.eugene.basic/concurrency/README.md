@@ -1056,7 +1056,7 @@
 
 #### 3.4.5 证明偏向锁的重偏向
 
-* 若一把锁是偏向锁，且偏向的是线程A。当线程A执行完加锁代码块后，线程B此时去申请拿这把锁，那么这把锁肯定会升级为轻量锁。但是有一个意外的情况，jvm认为：当重复将同一类型的锁(`假设这个锁的类型同时为Object类型`)升级为轻量锁时，若次数超过了`20`，此时jvm就会进行`重偏向操作`，即把当前类型的所有的锁都改成偏向锁，不做这个偏向锁升级为轻量锁的过程了。
+* 若一把锁是偏向锁，且偏向的是线程A。当线程A执行完加锁代码块后，线程B此时去申请拿这把锁，那么这把锁肯定会升级为轻量锁。但是有一个意外的情况，jvm认为：当重复将同一类型的锁(`假设这个锁的类型同时为Object类型`)升级为轻量锁时，若次数超过了`20(可以添加jvm参数查看: -XX:+PrintFlagsFinal)`，此时jvm就会将后面的锁对象进行`重偏向操作`，即把后面所有的锁都改成偏向锁，不做这个偏向锁升级为轻量锁的过程了。
 
 * 接下来开始证明，新增如下类`ReBiasedLock.java`
 
@@ -1105,12 +1105,109 @@
 
 * 运行结果与分析：
 
-  > 1.当THREAD_COUNT设置为19时，线程2打印出来的所有锁信息都为轻量锁。
-  > 2.当THREAD_COUNT设置为20时，线程2打印出来的所有锁信息都为偏向锁。
+  > 1.当THREAD_COUNT设置为19时，线程2打印出来的所有锁信息都为轻量锁(**同时要注意偏向的线程有没有变化**)。
+  > 2.当THREAD_COUNT设置为20时，线程2打印出来的所有锁信息都为偏向锁(**同时要注意偏向的线程有没有变化**)。
 
-* **`说明：在本案例中，使用的是User类(空对象，没有手动添加任何属性)作为锁时的阈值是20，但是我把类型换成Object的话，它的阈值并不是20。所以这块还需要确认这个阈值是不是要按照某种算法算出来的！`**
+* **`说明：在本案例中，使用的是User类(空对象，没有手动添加任何属性)作为锁的阈值是20，但是我把类型换成Object的话，它的阈值并不是20。所以这块还需要确认这个阈值是不是要按照某种算法算出来的！`**
 
-#### 3.4.6 证明重量锁
+#### 3.4.6 证明重撤销(重轻量)
+
+* 所谓重撤销、重轻量是指：若同一类型的锁升级轻量锁的次数达到了40，此时就会将后面的锁都批量撤销为无锁状态，并膨胀到轻量锁
+
+* 具体查看如下java类：
+
+  ```java
+  public class ReLightweightLock {
+  
+      static List<User> users = new ArrayList<>();
+  
+      public static void main(String[] args) throws InterruptedException {
+          System.out.println("Starting");
+  
+          // 延迟加载，让jvm开启偏向锁功能
+          Thread.sleep(4400);
+  
+          Thread t1 = new Thread(() -> {
+              for (int i = 0; i < 100; i++) {
+                  User lock = new User();
+                  users.add(lock);
+                  synchronized (lock) {
+                      if (i == 22) {
+                          System.out.println("t1 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
+                      }
+                  }
+              }
+          });
+          t1.start();
+          t1.join();
+  
+          // 打印第88个，已经是偏向锁了
+          System.out.println("i = 88 \t" + ClassLayout.parseInstance(users.get(88)).toPrintable());
+  
+          // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
+          new Thread(() -> {
+              try {
+                  Thread.sleep(2000);
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
+              }
+          }).start();
+  
+          Thread t2 = new Thread(() -> {
+              for (int i = 0; i < users.size(); i++) {
+                  User lock = users.get(i);
+                  synchronized (lock) {
+                      if (i == 10 || i == 21) {
+                          // 输出第10和21个，看看分别是不是轻量锁和偏向锁
+                          System.out.println("t2 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
+                      }
+                  }
+              }
+          });
+          t2.start();
+          t2.join();
+  
+          // 查看第10个锁对象，看看是不是20之前的锁也被重偏向了  --> 结果证明，只会对20以后的锁重偏向
+          System.out.println("i = 10\t" + ClassLayout.parseInstance(users.get(10)).toPrintable());
+  
+          // 查看第89个锁对象，看看是不是被批量重偏向了  --> 结果证明：是的
+          System.out.println("i = 88\t" + ClassLayout.parseInstance(users.get(88)).toPrintable());
+  
+          // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
+          new Thread(() -> {
+              try {
+                  Thread.sleep(2000);
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
+              }
+          }).start();
+  
+          Thread t3 = new Thread(() -> {
+              for (int i = 0; i < users.size(); i++) {
+                  User lock = users.get(i);
+                  synchronized (lock) {
+                      if (i == 10 || i == 21) {
+                          // 输出第10和21个，看看是不是都为轻量锁
+                          // ---> 结果证明：都为轻量锁
+                          // i == 10为轻量锁，我们都能理解，因为偏向锁被其他线程持有了，当然膨胀为轻量锁了
+                          // 可是i == 21不应该为偏向锁么？因为进行重偏向了
+                          // 这里不是重偏向了，因为user类型的锁升级为轻量锁的次数达到了40，所以jvm直接
+                          // 做了重撤销或者说重轻量的操作，把后面所有的锁都变成轻量锁了
+                          // 又因为前面20次本来就是轻量锁，所以此时整个100个user对象都是轻量锁
+                          System.out.println("t3 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
+                      }
+                  }
+              }
+          });
+          t3.start();
+          t3.join();
+      }
+  }
+  ```
+
+  
+
+#### 3.4.7 证明重量锁
 
 * 重量锁概念：**重量锁会存在多个线程抢占锁资源**。所以我们写一个生产者消费者案例来证明
 
@@ -1200,7 +1297,7 @@
 
   ![证明重量锁.png](./证明重量锁.png)
 
-#### 3.4.7 证明后得出的几个结论
+#### 3.4.8 证明后得出的几个结论
 
 * **偏向锁和hashcode是互斥的，只能存在一个**。
 

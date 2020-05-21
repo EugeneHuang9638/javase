@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class ReBiasedLock {
 
-    static List<Object> locks = new ArrayList<>();
+    static List<User> locks = new ArrayList<>();
 
     static final int THREAD_COUNT = 19;
 
@@ -20,7 +20,7 @@ public class ReBiasedLock {
 
         Thread t1 = new Thread(() -> {
             for (int i = 0; i < THREAD_COUNT; i++) {
-                Object lock = new Object();
+                User lock = new User();
                 locks.add(lock);
                 synchronized (lock) {
                     System.out.println("线程1 第 " + i + " 把锁");
@@ -35,9 +35,17 @@ public class ReBiasedLock {
         // 等t1执行完
         t1.join();
 
+        // 添加一个新线程，防止出现偏向锁的id重复的情况
+        // 我也不知道为什么，只知道这样能解决这样的问题
+        Thread tmp = new Thread(() -> {
+            System.out.println(1);
+        });
+        tmp.start();
+        tmp.join();
+
         new Thread(() -> {
             for (int i = 0; i < locks.size(); i++) {
-                Object lock = locks.get(i);
+                User lock = locks.get(i);
                 synchronized (lock) {
                     System.out.println("线程2 第 " + i + " 把锁");
                     System.out.println(ClassLayout.parseInstance(lock).toPrintable());
