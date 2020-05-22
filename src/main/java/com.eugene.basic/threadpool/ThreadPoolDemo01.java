@@ -17,21 +17,27 @@ import java.util.concurrent.Executors;
 public class ThreadPoolDemo01 {
 
     public static void main(String[] args) {
+        // 线程池数量大小一般是cpu核心数加1
         ExecutorService executorService = Executors.newFixedThreadPool(5);
         for (int i = 0; i < 10; i++) {
             // 将任务都交给线程池中处理
-            executorService.execute(new Task());
+            executorService.execute(() -> {
+                System.out.println(Thread.currentThread().getName());
+            });
         }
 
-        // 关闭线程任务
+        System.out.println(executorService);
+
+        // 关闭线程任务, 等任务执行完后再关闭
         executorService.shutdown();
 
+        // 将线程池立马关掉
+        // executorService.shutdownNow();
+
+        System.out.println(executorService.isShutdown());
+        System.out.println(executorService.isTerminated());
+        System.out.println(executorService);
+
     }
 
-    public static class Task implements Runnable {
-        @Override
-        public void run() {
-            System.out.println(Thread.currentThread().getName());
-        }
-    }
 }
