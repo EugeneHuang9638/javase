@@ -27,4 +27,9 @@ public class Parent implements Person {
         System.out.println("父类 run方法");
     }
 
+
+    private int sum(int x, int y) {
+        return x + y;
+    }
+
 }

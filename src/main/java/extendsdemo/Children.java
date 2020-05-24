@@ -32,4 +32,23 @@ public class Children extends Parent {
         System.out.println("子类run方法");
     }
 
+
+    /**
+     * 此处没有继承父类的sum方法，为什么呢？
+     *
+     * 因为private设计的初衷就是为了隐藏，不让其他类所知道。
+     *
+     * 在这里只是具有相同的方法而已。
+     *
+     * 但要注意，子类会继承父类的私有属性、方法，但是无法从子类中获取
+     *
+     * @param x
+     * @param y
+     * @return
+     */
+    private int sum(int x, int y) {
+        return x + y;
+    }
+
+
 }
