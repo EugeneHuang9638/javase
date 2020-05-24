@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * 如下: 第三方服务需要获取用户搜索的滑板鞋关键字, 然后帮安踏、特步、耐克、阿迪达斯等品牌卖, 所以可以跟他们的后台进行
  *      交互(获取指定类型鞋子的库存), 最终整理后返回滑板鞋库存总数量
  */
-public class CoundDownLatchDemo1 {
+public class CountDownLatchDemo1 {
 
     private static CountDownLatch countDownLatch = new CountDownLatch(4);
     private static final String[] brands = {"安踏", "特步", "耐克", "阿迪达斯"};

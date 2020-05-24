@@ -776,8 +776,8 @@
   |  interrupted  |     判断当前线程是否为interrupt状态，并清除interrupt状态     |                            类方法                            |
   |     sleep     |   将当前线程睡眠一段时间，此方法会抛出InterruptedException   |                            类方法                            |
   |     wait      | 此方法为object类的方法，一般作用于锁对象上，也就是说假设有一个锁为Object lock = new Object(); 那么一般是调用lock.wait(); 此方法可以让当前线程处于阻塞状态 |                              无                              |
-  |    notify     | 与wait成对出现，一般也是使用锁对象的notify方法，因为这样才能具体的通知到使用同一个锁对象的wait方法而进入阻塞状态的线程。 |   notify具有唤醒一个线程的功能，具体唤醒哪个线程由cpu决定    |
-  |   notifyAll   |                 与wait成对出现，与notify类似                 |            notifyAll唤醒的是所有wait状态下的线程             |
+  |    notify     | 与wait成对出现，一般也是使用锁对象的notify方法，因为这样才能具体的通知到使用同一个锁对象的wait方法而进入阻塞状态的线程。 | notify具有唤醒一个线程的功能，具体唤醒哪个线程由cpu决定(所谓的唤醒就是把线程放在可以竞争cpu资源的队列中去，在JVM源码中，是一个叫entry_list的队列) |
+  |   notifyAll   |                 与wait成对出现，与notify类似                 | notifyAll唤醒的是所有wait状态下的线程(即将所有的线程放在竞争cpu资源的队列中去，最终仅仅是只有一个线程被唤醒调用)  --> 因为notify和notifyAll会结合wait一起使用，而他们会结合synchronized关键字一起使用，`因此可以证明，synchronized是非公平锁` |
   |    suspend    |                           暂停线程                           |                          不会释放锁                          |
   |    resume     |                 恢复线程，与suspend配套使用                  |                              无                              |
   |     join      | 优先执行指定线程，eg：在线程t2中调用线程t1.join()方法，那么t2会让出cpu的调度权，让t1先执行 |                              无                              |
@@ -1315,6 +1315,10 @@
   >
   > 3.偏向锁只要被其他线程拿到了，此时偏向锁会膨胀。膨胀为**轻量锁**。
 
+#### 3.4.9 总结synchronized关键字原理
+
+* Synchronized关键字的实现原理是：当jvm把java类编译成class字节码文件时，会为synchronized关键字添加一个**monitorenter**和**monitorexit**指令，这个指令为jvm的一个规范，具体的实现由具体的虚拟机去实现(**eg: hotspot，jrockit, j9等等**)，在hotspot中，此执行在底层对应的是一个叫moniter的对象，内部维护了一个**wait_list和entry_list**(只有在这个队列中的线程才有资格竞争cpt资源)，当我们在调用锁对象的wait方法时，会将当前线程放入wait_list中去，当调用notify时，会从wait_list中随机找出一个线程放入entry_list中去，当调用notifyAll方法时，会将wait_list中所有的线程都放入到entry_list中，再由cpu来随机调度，因此它是一个**非公平锁**。同时，在jdk1.6之前，**monitorenter**和**monitorexit**指令在底层对应的实现就是调用os系统的函数(**mutex中的函数**)，因此它是一个重量级锁。而在jdk 1.6之后，jvm对synchronized关键字进行了优化，添加了**偏向锁、轻量锁、重量锁**。当只有一个线程持有锁时，这把锁为轻量锁，在轻量锁时，只会调用一次操作系统函数，后续在获取锁的过程中，jvm若发现当前锁是一把偏向锁并且偏向是同一个线程，那么此时就直接获取锁，不需要再调用操作系统函数，**这也说明synchronized是一把重入锁**。若发现当前获取锁的线程与锁偏向的线程不是同一个线程，此时就会进行锁膨胀。若在获取锁的线程之间，是交替执行的，此时就会进行**CAS操作**，膨胀成轻量锁。在轻量锁当中，锁会做自动释放的操作，也就是轻量锁在获取锁和释放锁的过程中都会调用操作系统的函数。若线程不是交替执行，而是有激烈的竞争行为时，此时会膨胀成重量级锁，此时的锁就是jdk 1.6时的synchronized一模一样了。
+
 ## 四、锁膨胀过程
 
 * 偏向锁只要被其他线程拿到了，此时偏向锁会膨胀。膨胀为**轻量锁**。膨胀的过程，首先它会将轻量锁释放，变为无锁状态，此时将执行CAS操作(拿到这把锁，并验证这把锁是不是无锁状态，如果是则把它升级成轻量锁)膨胀锁
@@ -1322,4 +1326,182 @@
 * synchronized关键字锁膨胀过程图：
 
   ![synchronized膨胀过程.png](./synchronized膨胀过程.png)
+
+## 五、实现AQS的组件
+
+### 5.1 CountdownLatch 门闩(shuan)
+
+* demo案例
+
+  ```java
+  // 来自于java高并发编程实战 ---> 
+  // 模拟工厂生产安踏、特步、耐克和阿迪达斯四种品牌的鞋，当他们都生产完毕后，咱们再统一获取
+  public class CountDownLatchDemo1 {
+  
+      private static CountDownLatch countDownLatch = new CountDownLatch(4);
+      private static final String[] brands = {"安踏", "特步", "耐克", "阿迪达斯"};
+      private static List<String> totalMount = new Vector();
+  
+      public static void main(String[] args) throws Exception {
+          final String requirement = "滑板鞋";
+          for (int i = 0; i < brands.length; i++) {
+              final int index = i;
+              new Thread(() -> {
+                  try {
+                      int mount = new Random().nextInt(10);
+                      TimeUnit.SECONDS.sleep(mount);
+                      System.out.println(Thread.currentThread().getName() + "剩余" + requirement + "数量: " + mount);
+                      totalMount.add(brands[index] + requirement + "库存: " + mount);
+                      countDownLatch.countDown();
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }, brands[i] + "厂商").start();
+          }
+  
+          // 主线程阻塞到这儿, 等CoutDownLatch计数器为0时会继续执行
+          countDownLatch.await();
+          System.out.println("==================获取成功==================");
+          totalMount.forEach(obj -> {
+              System.out.println(obj);
+          });
+  
+      }
+  }
+  ```
+
+### 5.2 Semaphore 信号量
+
+* demo案例
+
+  ```java
+  // 来自于java高并发编程实战
+  // 主要是以停车场的案例表示: 停车场车位固定，只能等别的车走其他的车才能停进去
+  public class SemaphoreDemo01 {
+  
+      // 停车场总共5个位置
+      static Semaphore semaphore = new Semaphore(5);
+  
+      public static void main(String[] args) {
+          // blockingWaiting();
+          // expectWaitingTime();
+          muli();
+      }
+  
+      /**
+       * 阻塞式的等待停车
+       */
+      public static void blockingWaiting() {
+          for (int i = 0; i < 10; i++) {
+              int index = i;
+              new Thread(() -> {
+                  try {
+                      // 每辆车停车之前要申请资源
+                      semaphore.acquire();
+                      System.out.println("car[" + index + "] 准备进停车场");
+  
+                      int time = new Random().nextInt(10);
+                      TimeUnit.SECONDS.sleep(time);
+                      System.out.println("car[" + index + "] 停车花费了: " + time + "秒" );
+                      semaphore.release();
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }).start();
+          }
+      }
+  
+      /**
+       * 只等待部分时间，若指定时间内还没有车位则不停了(
+       * 超过等待时间的线程则不会被执行)
+       */
+      public static void expectWaitingTime() {
+  
+          for (int i = 0; i < 10; i++) {
+              int index = i;
+              new Thread(() -> {
+                  try {
+                      if (semaphore.tryAcquire(2, TimeUnit.SECONDS)) {
+                          System.out.println("car[" + index + "] 准备进停车场");
+  
+                          int time = new Random().nextInt(10);
+                          TimeUnit.SECONDS.sleep(time);
+                          System.out.println("car[" + index + "] 停车花费了: " + time + "秒" );
+                          semaphore.release();
+                      }
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }).start();
+          }
+      }
+  
+  
+      /**
+       * 土豪式停车法，一次性停两个位置
+       */
+      public static void muli() {
+  
+          for (int i = 0; i < 10; i++) {
+              int index = i;
+              new Thread(() -> {
+                  try {
+                      semaphore.acquire(2);
+                      System.out.println("car[" + index + "] 准备进停车场");
+  
+                      int time = new Random().nextInt(10);
+                      TimeUnit.SECONDS.sleep(time);
+                      System.out.println("car[" + index + "] 停车花费了: " + time + "秒" );
+                      semaphore.release(2);
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }).start();
+          }
+      }
+  }
+  ```
+
+### 5.3 CyclicBarrier 栅栏
+
+* demo案例
+
+  ```java
+  // 来自于java并发编程实战
+  // 主要模拟赛跑运动员集合参加比赛的场景
+  public class CyclicBarrierDemo1 {
+  
+      private static CountDownLatch countDownLatch = new CountDownLatch(1);
+  
+      // CyclicBarrier 存在两个构造器, 第二个参数是所有的线程都准备就绪后(await的数量等于构造方法传入的10)执行的线程
+      private static CyclicBarrier cyclicBarrier = new CyclicBarrier(10, () -> {
+          System.out.println("裁判员: 各就各位，预备, 砰！");
+          countDownLatch.countDown();
+      });
+  
+      public static void main(String[] args) throws Exception {
+          for (int i = 0; i < 10; i++) {
+              int index = i;
+              new Thread(() -> {
+                  try {
+                      int count = new Random().nextInt(10);
+                      TimeUnit.SECONDS.sleep(count);
+                      System.out.println("运动员: " + index + "在起跑线准备就绪。");
+                      // 当有10个线程在这等待时，会执行CyclicBarrier构造方法的第二个参数(Runnable)
+                      cyclicBarrier.await();
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  }
+              }).start();
+          }
+  
+          countDownLatch.await();
+          System.out.println("所有运动员开始起跑！");
+      }
+  }
+  ```
+
+  
+
+
 
