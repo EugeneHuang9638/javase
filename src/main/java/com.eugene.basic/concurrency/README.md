@@ -1675,8 +1675,23 @@
 * **AQS(全称：Abstract Queued Synchronizer)**：其实就是内部维护了一个队列。其实就是维护了两个属性：**Node head**和**Node tail**，具体结构图如下：
 
   ![AQS结构图](./aqs/AQS模型图.png)
+  
+* **为什么aqs队列中的head对应的node节点中的thread为null？**
+
+  ```java
+  head中的thread属性为null有两种情况。
+  第一：当线程A调用lock方法时，aqs队列没有被初始化。此时若线程2在线程1没有释放锁的情况下调用了lock方法，此时就会初始化这么一个aqs队列。此时的head为手动new出来的一个node，里面维护的thread为null。(请注意：这里的thread为null就表示当前有线程被持有锁了，锁被谁持有的呢？在exclusiveOwnerThread属性中可以看到持有锁的线程。)并且这个new出来的node的next指向维护当前线程的Node(即上述的Node2)
+  
+  第二：当head的next属性对应的thread获取到锁时，此时会做一个操作，就是把head移除(即上述的node2要替换node1了)。即修改head的next的引用，把它指向上述的Node2，并把Node1的next的prev属性置为null(其实就是Node2的prev属性)，以及将Node1的next中维护的thread也置为null，方便垃圾回收。
+      
+  所以这里有一个结论，如果aqs队列被初始化了，那么head中维护的thread属性一定为null，因为这个时候就代表有线程持有了这把锁。哪个线程呢？同上，可以在exclusiveOwnerThread属性中看到(在tryAcquire方法中获取锁成功时会将当前线程赋值给exclusiveOwnerThread属性)
+  ```
+
+  
 
 ### 6.4 ReentrantLock 公平锁加锁源码分析
+
+#### 6.4.1 lock方法
 
 * java.util.concurrent.locks.ReentrantLock.FairSync#lock方法
 
@@ -1685,6 +1700,8 @@
       acquire(1);
   }
   ```
+
+#### 6.4.2 acquire方法
 
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#acquire
 
@@ -1715,6 +1732,8 @@
           selfInterrupt();
   }
   ```
+
+#### 6.4.3 tryAcquire方法
 
 * java.util.concurrent.locks.ReentrantLock.FairSync#tryAcquire
 
@@ -1758,6 +1777,8 @@
   }
   ```
 
+#### 6.4.4 hasQueuedProdecessors方法
+
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#hasQueuedPredecessors
 
   ```java
@@ -1783,6 +1804,8 @@
           ((s = h.next) == null || s.thread != Thread.currentThread());
   }
   ```
+
+#### 6.4.5 addWaiter方法
 
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#addWaiter
 
@@ -1813,6 +1836,8 @@
       return node;
   }
   ```
+
+#### 6.4.6 enq方法
 
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#enq
 
@@ -1852,6 +1877,8 @@
   调用enq方法初始化队列示意图
 
   ![第一次执行enq方法初始化队列.png](./aqs/第一次执行enq方法初始化队列.png)
+
+#### 6.4.7 acquireQueued方法
 
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#acquireQueued
 
@@ -1907,6 +1934,8 @@
   }
   ```
 
+#### 6.4.8 shouldParkAfterFailedAcquire方法
+
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#shouldParkAfterFailedAcquire
 
   ```java
@@ -1956,9 +1985,9 @@
   3. 若aqs队列中的第二个节点对应的线程还未释放锁，此时第三个线程进来，第一次加锁失败后，将自己加入到队列。然后在acquireQueued方法中发现自己并不是位于第二个节点，那么会自旋一次，最终进行park操作
   ```
 
-
-
 ### 6.5 ReentrantLock 非公平锁加锁源码分析
+
+#### 6.5.1 lock方法
 
 * java.util.concurrent.locks.ReentrantLock.NonfairSync#lock
 
@@ -1978,7 +2007,7 @@
   }
   ```
 
-  
+  由此可以说明**ReentrantRock**的特征是**`一朝排队，永远排队`**。ReentrantLock的所谓的公平与非公平的本质是**调用lock方法时是直接执行cas操作还是执行acquire操作**
 
 
 
