@@ -1327,7 +1327,7 @@
 
   ![synchronized膨胀过程.png](./synchronized膨胀过程.png)
 
-## 五、实现AQS的组件
+## 五、实现AQS(Abstract Queued Synchronizer)的组件
 
 ### 5.1 CountdownLatch 门闩(shuan)
 
@@ -1501,7 +1501,498 @@
   }
   ```
 
+
+
+### 5.4 ReentrantLock 可重入锁
+
+* demo案例
+
+  ```java
+  public class ReentrantLockDemo1 {
   
+      // 公平锁
+      static ReentrantLock lock = new ReentrantLock(true);
+  
+      static Random random = new Random();
+  
+      static CountDownLatch latch = new CountDownLatch(5);
+  
+      public static void main(String[] args) throws InterruptedException {
+  
+          for (int i = 0; i < 5; i++) {
+              new Thread(() -> {
+                  try {
+                      lock.lock();
+                      // 随机睡眠1-5s
+                      int sleepTime = random.nextInt(5);
+                      TimeUnit.SECONDS.sleep(sleepTime);
+                      System.out.println(Thread.currentThread().getName() + "睡眠了 " + sleepTime + "s");
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  } finally {
+                      lock.unlock();
+                      latch.countDown();
+                  }
+              }).start();
+          }
+  
+          // 等待上面的所有线程都执行完
+          latch.await();
+          System.out.println("main end");
+      }
+  }
+  ```
+
+## 六、ReentrantLock原理
+
+### 6.1 多线程中如何实现同步
+
+* 使用**synchronized + wait + notify**组合实现同步 + 线程交互  ---- 这是jdk自带的功能实现，如果我们要自己实现一把锁，会怎么设计呢？先理一下思路：**所谓同步，即只能有一个线程获取锁，其他的线程在等待，待持有锁的线程释放锁后，再由其他线程获取锁**于是，有了下面一个版本：**自旋 + volatile**
+
+*  `自旋 + volatile实现`
+
+  > ```java
+  > // 伪代码如下
+  > volatile int status = 0;
+  > 
+  > public void lock() {
+  >     while(!cas(0, 1)) {
+  > 	}
+  > }
+  > 
+  > public void unlock() {
+  > 	status = 0;
+  > }
+  > 
+  > public void cas(int originValue, int targetValue) {
+  >     // 调用unsafe类中的cas相关操作
+  >     // 若cas成功则返回true，否则false
+  > }
+  > ```
+  >
+  > 此种方式能够实现同步，因为cas是原子性操作，只有一个线程能够cas成功。其他的线程一直在自旋操作cas，因为cas一般是调用unsafe中的方法，而unsafe类中的方法基本上都是native，也就是说这里会涉及到java调用c语言代码的情况。**一直死循环调用c语言代码，这无疑是耗费cpu资源的**。为了解决这个问题，于是出现了**自旋 + volatile + yield**的实现
+
+* `自旋 + volatile + yield`
+
+  > ```java
+  > // 伪代码如下
+  > volatile int status = 0;
+  > 
+  > public void lock() {
+  >     while(!cas(0, 1)) {
+  >         yield();
+  > 	}
+  > }
+  > 
+  > public void unlock() {
+  > 	status = 0;
+  > }
+  > 
+  > public void cas(int originValue, int targetValue) {
+  >     // 调用unsafe类中的cas相关操作
+  >     // 若cas成功则返回true，否则false
+  > }
+  > ```
+  >
+  > 使用yield的方式无疑能解决占用cpu的问题。但是yield是让线程让出apu，后续要执行哪个线程完全是不可控的，若有多个线程执行了yield方法，最终cpu在调度线程执行时，需要在众多的线程中选择一个线程来执行，这无疑也是有cpu消耗的。针对此问题，于是出现了 **自旋 + volatile + sleep**的实现
+
+* `自旋 + volatile + sleep`
+
+  > ```java
+  > // 伪代码如下
+  > volatile int status = 0;
+  > 
+  > public void lock() {
+  >     while(!cas(0, 1)) {
+  > 		sleep(20);
+  > 	}
+  > }
+  > 
+  > public void unlock() {
+  > 	status = 0;
+  > }
+  > 
+  > public void cas(int originValue, int targetValue) {
+  >     // 调用unsafe类中的cas相关操作
+  >     // 若cas成功则返回true，否则false
+  > }
+  > ```
+  >
+  > 在cas操作后，睡眠20s。但为什们是20s不是30s？这是个好问题，这就像redis的分布式锁，过期时间没有一个确定的值。于是，针对此情况，出现了 **自旋 + volatile + park**的实现
+
+* `自旋 + volatile + park + Quene`
+
+  > ```java
+  > // 伪代码如下
+  > volatile int status = 0;
+  > 
+  > public void lock() {
+  >     while(!cas(0, 1)) {
+  > 		LockSupport.park()
+  > 	}
+  > }
+  > 
+  > public void unlock(Thread t) {
+  > 	status = 0;
+  >     LockSupport.unpark(t);
+  > }
+  > 
+  > public void cas(int originValue, int targetValue) {
+  >     // 调用unsafe类中的cas相关操作
+  >     // 若cas成功则返回true，否则false
+  > }
+  > ```
+  >
+  > 使用park的方式，可以指定的让某个线程阻塞，并在解锁时，可以显示的让指定线程解阻塞。但是具体解阻塞哪一个线程？我们不知道，所以我们可以像ReentrantLock一样，内部维护一个队列，这样每次解阻塞时就能解头部元素了(**ps: ReentrantLock不是这么实现的，这只是参考了它内部队列的思想** )。
+
+### 6.2 LockSupport.park()
+
+* demo案例
+
+  ```java
+  /**
+   * LockSupport.park()
+   * 内部操作的是Unsafe中的park方法
+   */
+  public class LockSupportDemo {
+  
+      public static void main(String[] args) throws InterruptedException {
+          Thread thread = new Thread(() -> {
+              System.out.println("start");
+              LockSupport.park();
+              System.out.println("end");
+          });
+          thread.start();
+  
+          Thread.sleep(3000);
+          LockSupport.unpark(thread);
+      }
+  }
+  ```
+
+### 6.3  AQS原理
+
+* **AQS(全称：Abstract Queued Synchronizer)**：其实就是内部维护了一个队列。其实就是维护了两个属性：**Node head**和**Node tail**，具体结构图如下：
+
+  ![AQS结构图](./aqs/AQS模型图.png)
+
+### 6.4 ReentrantLock 公平锁加锁源码分析
+
+* java.util.concurrent.locks.ReentrantLock.FairSync#lock方法
+
+  ```java
+  final void lock() {
+      acquire(1);
+  }
+  ```
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#acquire
+
+  ```java
+  /**
+   此方法很重要，涉及到了加锁、park的逻辑。
+   先说明下tryAcquire(arg)逻辑
+   此逻辑主要做的就是尝试去加锁，为什们叫尝试去加锁呢？
+   因为有可能会加锁失败呀！
+   于是我们先理解下tryAcquire(arg)的源码，源码分析在下面会展出
+   由上面的代码块得知，此时的arg为1。
+   这里要注意，只有当tryAcquire(arg)返回false时才会继续往下执行。
+   
+   当第二个线程调用lock方法(线程一还未释放锁)时，若此时的state为1且和持有锁的线程不一致，
+   那么此时tryAcquire将会失败，那么此时就是返回false，于是执行
+   acquireQueued(addWaiter(Node.EXCLUSIVE), arg)代码。
+   所以首先会执行addWaiter(Node.EXCLUSIVE)代码，此代码可以查看下面的
+   源码分析，主要是将当前未拿到锁的线程添加到队列中去或者一直在自旋(当队列中
+   最后一个node释放了锁，就会cas失败， 最终自旋)，addWaiter(Node.EXCLUSIVE)
+   方法会返回一个队列，一般返回队列了，那就说明线程添加到队列中去了。
+   
+   接下来会执行acquireQueued方法，acquireQueued方法参考下面的源码分析 
+   
+   */
+  public final void acquire(int arg) {
+      if (!tryAcquire(arg) &&
+          acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+          selfInterrupt();
+  }
+  ```
+
+* java.util.concurrent.locks.ReentrantLock.FairSync#tryAcquire
+
+  ```java
+  protected final boolean tryAcquire(int acquires) {
+      // 获取到当前线程
+      final Thread current = Thread.currentThread();
+      // 获取到aqs中的state变量 --> 此变量很重要，整个AQS就是以此变量作为标识
+      // 若此变量为0   则标识没有线程占用过锁
+      // 若此变量为1   则标识由线程正在占用所
+      // 若次变量大于1 则标识是重入锁(线程重入了)
+      int c = getState();
+      if (c == 0) {
+          // 上面说了，c == 0表示没有线程占用过锁
+          // 但此时有两种情况
+          // 第一种是：整个aqs都没初始化，即首次调用reentrantLock.lock()方法
+          // 第二种是：前面的线程把锁给释放了，即把state改成0了，且其他线程还未获取到锁
+          // 当第一次调用reentrantLock.lock方法时, 此时c等于0
+          // 这里又要注意下：只有当hasQueuedPredecessors()方法返回false，才会执行下面的加锁逻辑
+          // hasQueuedPredecessors()源码逻辑参考下面
+          // 当hasQueuedPredecessors()返回false后，
+          // 再执行cas操作，即将state从0改成1，
+          // 若case操作成功则设置aqs中exclusiveOwnerThread变量为当前线程, 标识当前是此线程持有了锁
+          if (!hasQueuedPredecessors() &&
+              compareAndSetState(0, acquires)) {
+              setExclusiveOwnerThread(current);
+              return true;
+          }
+      }
+      // 此种情况就是重入的情况
+      else if (current == getExclusiveOwnerThread()) {
+          int nextc = c + acquires;
+          // 当重入次数超过了int的最大值，此时就不能重入了
+          if (nextc < 0)
+              throw new Error("Maximum lock count exceeded");
+          // 此时不需要执行cas操作将state加1，而是直接添加
+          setState(nextc);
+          return true;
+      }
+      return false;
+  }
+  ```
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#hasQueuedPredecessors
+
+  ```java
+  /**
+   进入此方法内可能会有三种情况：
+   1. 整个aqs队列还未初始化，即head和tail都为null的情况下，此时返回false
+   2. 整个队列中只有一个节点，也就是只有head节点，即有两个线程竞争过锁，并且
+      都获取到了锁且都释放了锁。此时的head为第二个node(维护第二个线程的node).
+      此时的tail也为node，此时返回false
+   3. 整个队列中只有两个节点，分别为head和正在持有锁的线程对应的node，此时的
+      head和tail不相等，并且head的next不为空，当第三个线程进来，发现第二个node
+      中维护的线程与自己不相等，返回true
+   */
+  public final boolean hasQueuedPredecessors() {
+      // tail 和 head是父类AbstractQueuedSynchronizer维护的两个属性
+      // 这两个属性在初始化ReentrantLock时并没有进行赋值
+      // 所以此时tail和head肯定为null，所以第一次调用hasQueuedPredecessors方法时，
+      // h 和 t都为null，所以此方法肯定返回false
+      Node t = tail;
+      Node h = head;
+      Node s;
+      return h != t &&
+          ((s = h.next) == null || s.thread != Thread.currentThread());
+  }
+  ```
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#addWaiter
+
+  ```java
+  /**
+     若一个线程进入此方法，那么一定是加锁不成功的情况
+   */
+  private Node addWaiter(Node mode) {
+      // 此时会new一个Node，此Node中thread属性为当前线程，nextWaiter为mode
+      Node node = new Node(Thread.currentThread(), mode);
+  
+      // 将AbstractQueuedSynchronizer类中的tail赋值为pred，
+      // 若是第一次调用waiter方法，此时的pred和tail都为null，于是会执行enq方法
+      Node pred = tail;
+      if (pred != null) {
+          node.prev = pred;
+          if (compareAndSetTail(pred, node)) {
+              pred.next = node;
+              return node;
+          }
+      }
+      // enq方法具体参考下面的源码分析, 
+      // 大致作用就是初始化队列或者 不停的将node添加到队列中去(自旋 + cas)
+      // cas的操作就是，当我前面的节点是aqs中的tail属性时，那么就把自己放在tail.next中
+      enq(node);
+      
+      // 过了此步骤，则标识当前线程已经自旋结束并进入队列中了
+      return node;
+  }
+  ```
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#enq
+
+  ```java
+  // 形参node就是addWaiter创建的node
+  private Node enq(final Node node) {
+      // 死循环
+      for (;;) {
+          // 拿到AbstractQueuedSynchronizer的tail属性, 此时为null
+          Node t = tail;
+          if (t == null) { // Must initialize
+              // 为null的情况下，则进行cas操作
+              // 创建一个新节点并赋值给tail
+              // 此时会继续循环
+              // 此时的tail为新new出来的节点，此时会进else
+              if (compareAndSetHead(new Node()))
+                  tail = head;
+          } else {
+              // 将t(就是AbstractQueuedSynchronizer的tail属性)赋值给传入节点的prev属性
+              // 但要注意，当第一次调用enq方法时，tail就是head，head就是第一次循环进入if
+              // 中创建出来的new Node(),
+              // 执行node.prev = t ==> 即将t和node关联起来，将node的prev指向t
+              node.prev = t;
+              
+              // 执行compareAndSetTail(t, node) ==> cas操作将tail由t改成node
+              if (compareAndSetTail(t, node)) {
+                  // 最终将t的next与传入的node关联上
+                  t.next = node;
+                  // 将t返回出去，此时的t为队列中的tail属性
+                  return t;
+              }
+          }
+      }
+  }
+  ```
+
+  调用enq方法初始化队列示意图
+
+  ![第一次执行enq方法初始化队列.png](./aqs/第一次执行enq方法初始化队列.png)
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#acquireQueued
+
+  ```java
+  /**
+   由上述acquire方法调用进来可知，
+   node为aqs中队列的tail属性，arg为1
+   */
+  final boolean acquireQueued(final Node node, int arg) {
+      boolean failed = true;
+      try {
+          boolean interrupted = false;
+          for (;;) {
+              // 拿到队列中tail属性的prev属性
+              final Node p = node.predecessor();
+              // 如果tail的prev属性为aqs的head，即当前的队列只有两个元素
+  		   // 一个元素为头节点(不会变，内部没有存线程对象)
+              // 另一个为tail本身，
+              // 此时则继续去拿锁，调用tryAcquire方法
+              // 还记得tryAcquire方法嘛？加锁成功则返回true
+              // ==> 简单来说，就是如果当前线程对应的node是位于队列中的第二个，
+              // 则一直在这里自旋获取锁，若此时有第三个、第四个线程进来
+              // 则自旋两次(循环两次)，把上一个node的waitStatus改成-1，并将自己park
+              if (p == head && tryAcquire(arg)) {
+                  // 进入这里面则表示加锁成功，此时把自己置为head节点
+                  setHead(node);
+                  // 将之前的head节点设置next属性为null，帮助GC
+                  // 因为此时head就是个没有被任何对象引用到
+                  p.next = null; // help GC
+                  // 将failed置为false，则不需要再执行finally中if中的代码了
+                  failed = false;
+                  // 返回false，因为当前线程已经拿到锁了
+                  return interrupted;
+              }
+              
+              // 如果获取锁失败，那么将进行park操作
+              // 此时，可以确定的是，当前的tail属性不是head的next
+              // p为tail的prev，node为tail
+              // shouldParkAfterFailedAcquire(p, node)要返回true
+              // 才能往后执行parkAndCheckInterrupt()，
+              // 所以此时第一次循环结束，
+              // 第二次循环时，发现tail的prev的waitStatus为-1
+              // 第十就会返回true，于是执行后面的parkAndCheckInterrupt()方法。
+              // 于是，进行park操作以及将当前线程设置为中断状态
+              if (shouldParkAfterFailedAcquire(p, node) &&
+                  parkAndCheckInterrupt())
+                  interrupted = true;
+          }
+      } finally {
+          if (failed)
+              cancelAcquire(node);
+      }
+  }
+  ```
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#shouldParkAfterFailedAcquire
+
+  ```java
+  private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+      // 拿到tail的prev的waitStatus
+      // 代表五种状态
+      // SIGNAL = -1 --> 当前node对应的线程需要进入park  ==> 因为当前node的prev都处于pack状态，那自己肯定也要park啊
+      // CANCELLED = 1 --> 当前node对应的线程取消park ==> 有可能是因为超时或者被intterupt
+      // CONDITION = -2 --> 还不清楚
+      // PROPAGATE = -3 --> 不清楚
+      // 0 --> 以上都不是
+      int ws = pred.waitStatus;
+      if (ws == Node.SIGNAL)
+          /*
+           * This node has already set status asking a release
+           * to signal it, so it can safely park.
+           */
+          return true;
+      if (ws > 0) {
+          /*
+           * Predecessor was cancelled. Skip over predecessors and
+           * indicate retry.
+           */
+          do {
+              node.prev = pred = pred.prev;
+          } while (pred.waitStatus > 0);
+          pred.next = node;
+      } else {
+          /*
+           * waitStatus must be 0 or PROPAGATE.  Indicate that we
+           * need a signal, but don't park yet.  Caller will need to
+           * retry to make sure it cannot acquire before parking.
+           */
+          // 我们一直就没处理过waitStatus，所以它默认肯定为0
+          // 于是此时，会将tail的prev节点的watStatus设置成-1
+          compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+      }
+      return false;
+  }
+  ```
+
+* aqs公平锁加锁源码总结：
+
+  ```txt
+  1. aqs中的队列，有一个head节点，内部没有维护任何线程
+  2. 位于aqs队列中的第二个节点是当前持有锁的线程
+  3. 若aqs队列中的第二个节点对应的线程还未释放锁，此时第三个线程进来，第一次加锁失败后，将自己加入到队列。然后在acquireQueued方法中发现自己并不是位于第二个节点，那么会自旋一次，最终进行park操作
+  ```
+
+
+
+### 6.5 ReentrantLock 非公平锁加锁源码分析
+
+* java.util.concurrent.locks.ReentrantLock.NonfairSync#lock
+
+  ```java
+  /**
+   非公平锁，不公平之处在于：一调用lock方法就是进行cas操作。
+   假设在第二个节点刚执行完，释放完锁，当第三个节点准备获取
+   锁时，此时第N个线程在外部直接调用了lock方法，并cas成功了。
+   此时第二个节点获取锁失败。继续park
+   */
+  final void lock() {
+      if (compareAndSetState(0, 1))
+          setExclusiveOwnerThread(Thread.currentThread());
+      else
+          // 这段逻辑跟公平锁的lock方法逻辑一致
+          acquire(1);
+  }
+  ```
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
