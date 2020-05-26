@@ -1678,7 +1678,7 @@
   
 * **为什么aqs队列中的head对应的node节点中的thread为null？**
 
-  ```java
+  ```txt
   head中的thread属性为null有两种情况。
   第一：当线程A调用lock方法时，aqs队列没有被初始化。此时若线程2在线程1没有释放锁的情况下调用了lock方法，此时就会初始化这么一个aqs队列。此时的head为手动new出来的一个node，里面维护的thread为null。(请注意：这里的thread为null就表示当前有线程被持有锁了，锁被谁持有的呢？在exclusiveOwnerThread属性中可以看到持有锁的线程。)并且这个new出来的node的next指向维护当前线程的Node(即上述的Node2)
   
@@ -1886,6 +1886,19 @@
   /**
    由上述acquire方法调用进来可知，
    node为aqs中队列的tail属性，arg为1
+   
+   每个线程执行此方法，正常情况下，在for循环中自旋3次
+   第一次为将上一个node的waitStatus置为-1
+   第二次将会被park
+   第三次将被unpark后，又会进行自旋一次，此时又会尝试去加锁，
+     因为此时是公平锁，所以肯定能tryAcquire成功，于是拿到锁
+     自旋结束。
+     
+     如果是非公平锁的话，在tryAcquire过程中，如果有其他线程执行
+     了lock方法并拿到了锁。那么自己又拿不到锁，又会自旋两次:
+     第一次是将刚刚拿到锁的线程的waitStatus置为-1，
+     第二次则继续park。 所以在非公平锁中，会至少自旋3次，
+     后续将以2的公差进行自旋。
    */
   final boolean acquireQueued(final Node node, int arg) {
       boolean failed = true;
@@ -1922,12 +1935,18 @@
               // 所以此时第一次循环结束，
               // 第二次循环时，发现tail的prev的waitStatus为-1
               // 第十就会返回true，于是执行后面的parkAndCheckInterrupt()方法。
-              // 于是，进行park操作以及将当前线程设置为中断状态
+              // 于是，进行park操作，
+              // ******待被上个线程唤醒后再继续执行******
+              // 继续执行后，在parkAndCheckInterrupt方法内部会
+              // 做一个操作： Thread.interrupted();
+              // 此操作会判断当前线程是不是处于中断状态，并移除中断状态
               if (shouldParkAfterFailedAcquire(p, node) &&
                   parkAndCheckInterrupt())
                   interrupted = true;
           }
       } finally {
+          // 当线程在自旋的过程中抛出了异常
+          // 则取消此线程的acquire操作
           if (failed)
               cancelAcquire(node);
       }
@@ -2009,7 +2028,139 @@
 
   由此可以说明**ReentrantRock**的特征是**`一朝排队，永远排队`**。ReentrantLock的所谓的公平与非公平的本质是**调用lock方法时是直接执行cas操作还是执行acquire操作**
 
+### 6.6 ReentrantLock解锁源码分析
 
+#### 6.6.1 unlock方法
+
+* java.util.concurrent.locks.ReentrantLock#unlock
+
+  ```java
+  public void unlock() {
+      sync.release(1);
+  }
+  ```
+
+#### 6.6.2 release方法
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#release
+
+  ```java
+  /**
+   解锁有三种情况：
+   第一种情况：aqs队列一致就未被初始化过，即只有一个线程加锁过或者多个线程交替执行
+   第二种情况：aqs队列中自己就是最后一个，即tail属性指向的是自己。此时这个线程对应的node
+              的waitStatus肯定为0，压根就不需要unpark操作
+   第三种情况：aqs队列中有多个元素，自己解锁成功后需要唤醒下一个元素
+   
+   综上所述，整体的unpark逻辑就是：判断自己是不是最后一个节点，如果不是，则要进行unpark操作
+   */
+  public final boolean release(int arg) {
+      // 尝试去释放锁，与tryLock一样，有可能会失败
+      // tryRelease具体源码分析将在下面给出
+      if (tryRelease(arg)) {
+          // 如果进入此代码块，则代表所被释放了
+          // 此时要做的事就是唤醒后面的线程，即unpark
+          // 但是unpark是有条件的
+          // 第一：头结点 != null  ---> 只要aqs实例化了，基本上不会为null
+          // 第二：头结点的waitStatus要不等于0
+          // 这里解释下waitStatus
+          // waitStatus在默认情况下每个节点都是为0
+          // 只有在acquireQueued方法中，新进入的线程会把上一个线程
+          // 对应node的waitStatus cas操作成-1
+          // 我们既然要unpark，那么线程必须就要排队，要排队，那么waitStatus的值
+          // 必须为-1
+          Node h = head;
+          if (h != null && h.waitStatus != 0)
+              // unpark操作，给定head
+              unparkSuccessor(h);
+          return true;
+      }
+      return false;
+  }
+  ```
+
+#### 6.6.3 tryRelease方法
+
+* java.util.concurrent.locks.ReentrantLock.Sync#tryRelease
+
+  ```java
+  protected final boolean tryRelease(int releases) {
+      // release过程中，传入的值都为1，所以形参releases为1
+      // 获取aqs中的state属性，并与形参releases做减法
+      // 此时的c的值可能大于0也可能等于0
+      // 大于0的情况表示是重入锁的解锁情况
+      // 等于0的情况表示锁是自由状态
+      int c = getState() - releases;
+      
+      // 判断当前解锁的线程和当前拥有锁的线程是不是相同，不相同则抛出异常
+      if (Thread.currentThread() != getExclusiveOwnerThread())
+          throw new IllegalMonitorStateException();
+      boolean free = false;
+      
+      // 只有state == 0才会将锁至为自由状态，并且将拥有锁的线程置空
+      if (c == 0) {
+          free = true;
+          setExclusiveOwnerThread(null);
+      }
+      // 最后修改aqs中的state属性
+      setState(c);
+      // 返回锁的状态，state == 0 则为自由状态，否则则表示还被线程持有锁 
+      return free;
+  }
+  ```
+
+#### 6.6.4 unparkSuccessor方法
+
+* java.util.concurrent.locks.AbstractQueuedSynchronizer#unparkSuccessor
+
+  ```java
+  /**
+   传入的形参为aqs的head节点
+   */
+  private void unparkSuccessor(Node node) {
+      /*
+       * If status is negative (i.e., possibly needing signal) try
+       * to clear in anticipation of signalling.  It is OK if this
+       * fails or if status is changed by waiting thread.
+       */
+      // 获取head节点的waitStatus
+      // 此时会有两种情况，
+      // 第一种：这个head为最开始初始化aqs中的head
+      // 第二种：这个head为后面加锁成功的线程对应的node
+      // 针对第一种情况
+      //   node.waitStatus肯定为0，则不需要把它设置为0
+      // 针对第二种情况
+      //   node.waitStatus肯定为-1，此时需要进行cas操作把它设置为0
+      int ws = node.waitStatus;
+      if (ws < 0)
+          compareAndSetWaitStatus(node, ws, 0);
+  
+      /*
+       * Thread to unpark is held in successor, which is normally
+       * just the next node.  But if cancelled or apparently null,
+       * traverse backwards from tail to find the actual
+       * non-cancelled successor.
+       */
+      // 拿到当前head的下一个节点，因为要unpark head的下一个节点
+      Node s = node.next;
+      // 到了这一步，正常情况下肯定不为null
+      if (s == null || s.waitStatus > 0) {
+          s = null;
+          for (Node t = tail; t != null && t != node; t = t.prev)
+              if (t.waitStatus <= 0)
+                  s = t;
+      }
+      // 此时需要将head的下一个节点进行unpark操作
+      if (s != null)
+          // 当执行到这个方法时，线程被唤醒了，此时应该执行
+          // 加锁过程的acquireQueued方法的被park处的位置
+          // 此方法处：
+          // java.util.concurrent.locks.AbstractQueuedSynchronizer#parkAndCheckInterrupt
+          LockSupport.unpark(s.thread);
+  }
+  ```
+
+  
 
 
 
