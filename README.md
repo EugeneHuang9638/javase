@@ -15,13 +15,6 @@ javase basic模块
 
 * README：[https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency)
 
-* AQS: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/aqs](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/aqs)
-
-* CAS: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/cas](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/cas)
-* JUC: 
-  1. 并发集合: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/concurrentcollections](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/concurrentcollections)
-  2. 并发同步锁: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/concurrentpackage](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/concurrency/concurrentpackage)
-* Singleton: [https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/singletonpattern](https://github.com/AvengerEug/javase/tree/develop/src/main/java/com.eugene.basic/singletonpattern)
 
 ### 三、jvm
 
