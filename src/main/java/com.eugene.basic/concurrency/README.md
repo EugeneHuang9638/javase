@@ -1149,92 +1149,98 @@ java并发编程
   ```java
   public class ReLightweightLock {
   
-      static List<User> users = new ArrayList<>();
-  
-      public static void main(String[] args) throws InterruptedException {
-          System.out.println("Starting");
-  
-          // 延迟加载，让jvm开启偏向锁功能
-          Thread.sleep(4400);
-  
-          Thread t1 = new Thread(() -> {
-              for (int i = 0; i < 100; i++) {
-                  User lock = new User();
-                  users.add(lock);
-                  synchronized (lock) {
-                      if (i == 22) {
-                          System.out.println("t1 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
-                      }
-                  }
-              }
-          });
-          t1.start();
-          t1.join();
-  
-          // 打印第88个，已经是偏向锁了
-          System.out.println("i = 88 \t" + ClassLayout.parseInstance(users.get(88)).toPrintable());
-  
-          // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
-          new Thread(() -> {
-              try {
-                  Thread.sleep(2000);
-              } catch (InterruptedException e) {
-                  e.printStackTrace();
-              }
-          }).start();
-  
-          Thread t2 = new Thread(() -> {
-              for (int i = 0; i < users.size(); i++) {
-                  User lock = users.get(i);
-                  synchronized (lock) {
-                      if (i == 10 || i == 21) {
-                          // 输出第10和21个，看看分别是不是轻量锁和偏向锁
-                          System.out.println("t2 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
-                      }
-                  }
-              }
-          });
-          t2.start();
-          t2.join();
-  
-          // 查看第10个锁对象，看看是不是20之前的锁也被重偏向了  --> 结果证明，只会对20以后的锁重偏向
-          System.out.println("i = 10\t" + ClassLayout.parseInstance(users.get(10)).toPrintable());
-  
-          // 查看第89个锁对象，看看是不是被批量重偏向了  --> 结果证明：是的
-          System.out.println("i = 88\t" + ClassLayout.parseInstance(users.get(88)).toPrintable());
-  
-          // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
-          new Thread(() -> {
-              try {
-                  Thread.sleep(2000);
-              } catch (InterruptedException e) {
-                  e.printStackTrace();
-              }
-          }).start();
-  
-          Thread t3 = new Thread(() -> {
-              for (int i = 0; i < users.size(); i++) {
-                  User lock = users.get(i);
-                  synchronized (lock) {
-                      if (i == 10 || i == 21) {
-                          // 输出第10和21个，看看是不是都为轻量锁
-                          // ---> 结果证明：都为轻量锁
-                          // i == 10为轻量锁，我们都能理解，因为偏向锁被其他线程持有了，当然膨胀为轻量锁了
-                          // 可是i == 21不应该为偏向锁么？因为进行重偏向了
-                          // 这里不是重偏向了，因为user类型的锁升级为轻量锁的次数达到了40，所以jvm直接
-                          // 做了重撤销或者说重轻量的操作，把后面所有的锁都变成轻量锁了
-                          // 又因为前面20次本来就是轻量锁，所以此时整个100个user对象都是轻量锁
-                          System.out.println("t3 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
-                      }
-                  }
-              }
-          });
-          t3.start();
-          t3.join();
-      }
-  }
+  	    static List<User> locks = new ArrayList<>();
+  	
+  	    public static void main(String[] args) throws InterruptedException {
+  	        System.out.println("Starting");
+  	
+  	        // 延迟加载，让jvm开启偏向锁功能
+  	        Thread.sleep(4400);
+  	
+  	
+  	        Thread t1 = new Thread(() -> {
+  	            for (int i = 0; i < 45; i++) {
+  	                User lock = new User();
+  	                locks.add(lock);
+  	                synchronized (lock) {
+  	                    // 不做任何事，可以确定45把锁全部变成了偏向锁
+  	                }
+  	            }
+  	        }, "t1");
+  	        t1.start();
+  	        t1.join();
+  	
+  	        // 打印第43把锁，已经是偏向锁了
+  	        System.out.println("i = 42 \t" + ClassLayout.parseInstance(locks.get(42)).toPrintable());
+  	
+  	        // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
+  	        new Thread(() -> {
+  	            try {
+  	                Thread.sleep(2000);
+  	            } catch (InterruptedException e) {
+  	                e.printStackTrace();
+  	            }
+  	        }, "tmp1").start();
+  	
+  	        Thread t2 = new Thread(() -> {
+  	            for (int i = 0; i < locks.size(); i++) {
+  	                User lock = locks.get(i);
+  	                synchronized (lock) {
+  	                    if (i == 10 || i == 21) {
+  	                        // 输出第11和22个，看看分别是不是轻量锁和偏向锁
+  	                        System.out.println("t2 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
+  	                    }
+  	                }
+  	            }
+  	        }, "t1");
+  	        t2.start();
+  	        t2.join();
+  	
+  	        // 查看第11把锁对象，看看是不是20之前的锁也被重偏向了  --> 结果证明，只会对20以后的锁重偏向
+  	        // 这里输出的是无锁状态，因为i= 10时，被线程2持有过，膨胀成轻量锁了，而轻量锁在释放锁后会变成无锁状态
+  	        System.out.println("i = 10\t" + ClassLayout.parseInstance(locks.get(10)).toPrintable());
+  	
+  	        // 查看第43把锁对象，看看是不是被批量重偏向了  --> 结果证明：是的
+  	        System.out.println("i = 42\t" + ClassLayout.parseInstance(locks.get(42)).toPrintable());
+  	
+  	
+  	        // 创建一个新线程睡眠2s，保证下面的代码先执行，保证重偏向时，不会出现线程ID重复的情况
+  	        new Thread(() -> {
+  	            try {
+  	                Thread.sleep(2000);
+  	            } catch (InterruptedException e) {
+  	                e.printStackTrace();
+  	            }
+  	        }, "tmp2").start();
+  	
+  	        Thread t3 = new Thread(() -> {
+  	            for (int i = 0; i < locks.size(); i++) {
+  	                User lock = locks.get(i);
+  	                synchronized (lock) {
+  	                    if (i == 10 || i == 21 || i == 40) {
+  	                        // 输出第11和22个，看看是不是都为轻量锁
+  	                        // ---> 结果证明：都为轻量锁
+  	                        // i == 10为轻量锁，我们都能理解，因为偏向锁被其他线程持有了，当然膨胀为轻量锁了
+  	                        // 可是i == 21不应该为偏向锁么？(超过了重偏向的阈值)
+  	                        // ==> 这里不是重偏向了，因为user类型的锁升级为轻量锁的次数达到了40(线程2升级了20次)，
+  	                        // 所以jvm直接做了重轻量的操作，把后面所有的锁都变成轻量锁了
+  	                        // 所以i == 21应该是轻量锁
+  	                        // i == 40同样也是轻量锁
+  	                        System.out.println("t3 i = " + i + "\t" + ClassLayout.parseInstance(lock).toPrintable());
+  	                    }
+  	                }
+  	            }
+  	        }, "t3");
+  	        t3.start();
+  	        t3.join();
+  	
+	        // 此时是无锁状态，因为线程3进行批量重轻量了，而它释放了锁，所以是无锁状态
+  	        System.out.println("main i = 40 \t" + ClassLayout.parseInstance(locks.get(40)).toPrintable());
+  	
+  	    }
+  	}
   ```
-
+  
   
 
 #### 3.4.7 证明重量锁
@@ -1327,7 +1333,11 @@ java并发编程
 
   ![证明重量锁.png](./证明重量锁.png)
 
-#### 3.4.8 证明后得出的几个结论
+#### 3.4.8 调用wait方法后会升级为重量锁
+
+* 
+
+#### 3.4.9 证明后得出的几个结论
 
 * **偏向锁和hashcode是互斥的，只能存在一个**。
 
@@ -1345,9 +1355,9 @@ java并发编程
   >
   > 3.偏向锁只要被其他线程拿到了，此时偏向锁会膨胀。膨胀为**轻量锁**。
 
-#### 3.4.9 总结synchronized关键字原理
+#### 3.4.10 总结synchronized关键字原理
 
-* Synchronized关键字的实现原理是：当jvm把java类编译成class字节码文件时，会为synchronized关键字添加一个**monitorenter**和**monitorexit**指令，这个指令为jvm的一个规范，具体的实现由具体的虚拟机去实现(**eg: hotspot，jrockit, j9等等**)，在hotspot中，此执行在底层对应的是一个叫moniter的对象，内部维护了一个**wait_list和entry_list**(只有在这个队列中的线程才有资格竞争cpt资源)，当我们在调用锁对象的wait方法时，会将当前线程放入wait_list中去，当调用notify时，会从wait_list中随机找出一个线程放入entry_list中去，当调用notifyAll方法时，会将wait_list中所有的线程都放入到entry_list中，再由cpu来随机调度，因此它是一个**非公平锁**。同时，在jdk1.6之前，**monitorenter**和**monitorexit**指令在底层对应的实现就是调用os系统的函数(**mutex中的函数**)，因此它是一个重量级锁。而在jdk 1.6之后，jvm对synchronized关键字进行了优化，添加了**偏向锁、轻量锁、重量锁**。当只有一个线程持有锁时，这把锁为轻量锁，在轻量锁时，只会调用一次操作系统函数，后续在获取锁的过程中，jvm若发现当前锁是一把偏向锁并且偏向是同一个线程，那么此时就直接获取锁，不需要再调用操作系统函数，**这也说明synchronized是一把重入锁**。若发现当前获取锁的线程与锁偏向的线程不是同一个线程，此时就会进行锁膨胀。若在获取锁的线程之间，是交替执行的，此时就会进行**CAS操作**，膨胀成轻量锁。在轻量锁当中，锁会做自动释放的操作，也就是轻量锁在获取锁和释放锁的过程中都会调用操作系统的函数。若线程不是交替执行，而是有激烈的竞争行为时，此时会膨胀成重量级锁，此时的锁就是jdk 1.6时的synchronized一模一样了。
+* Synchronized关键字的实现原理是：当jvm把java类编译成class字节码文件时，若synchronized关键字修饰的方法，则会添加**ACC_SYNCHRONIZED**标识，若synchronized关键字修饰的是代码块，则会在代码块前后添加**monitorenter**和**monitorexit**指令，这些指令为jvm的一个规范，具体的实现由具体的虚拟机去实现(**eg: hotspot，jrockit, j9等等**)，在hotspot中，此执行在底层对应的是一个叫moniter的对象，内部维护了一个**wait_list和entry_list**(只有在这个队列中的线程才有资格竞争cpu资源)，当我们在调用锁对象的wait方法时，会将当前线程放入wait_list中去，当调用notify时，会从wait_list中随机找出一个线程放入entry_list中去，当调用notifyAll方法时，会将wait_list中所有的线程都放入到entry_list中，再由cpu来随机调度，因此它是一个**非公平锁**。同时，在jdk1.6之前，**monitorenter**和**monitorexit**指令在底层对应的实现就是调用os系统的函数(**mutex中的函数**)，因此它是一个重量级锁。而在jdk 1.6之后，jvm对synchronized关键字进行了优化，添加了**偏向锁、轻量锁、重量锁**。当只有一个线程持有锁时，这把锁为轻量锁，在轻量锁时，只会调用一次操作系统函数，后续在获取锁的过程中，jvm若发现当前锁是一把偏向锁并且偏向是同一个线程，那么此时就直接获取锁，不需要再调用操作系统函数，**这也说明synchronized是一把重入锁**。若发现当前获取锁的线程与锁偏向的线程不是同一个线程，此时就会进行锁膨胀。若在获取锁的线程之间，是交替执行的，此时就会进行**CAS操作**，膨胀成轻量锁。在轻量锁当中，锁会做自动释放的操作，也就是轻量锁在获取锁和释放锁的过程中都会调用操作系统的函数。若线程不是交替执行，而是有激烈的竞争行为时，此时会膨胀成重量级锁，此时的锁就是jdk 1.6时的synchronized一模一样了。
 
 ## 四、锁膨胀过程
 

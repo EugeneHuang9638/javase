@@ -29,8 +29,8 @@ public class ValidSynchronized {
         consumer.interrupt();
         producer.interrupt();
 
-        // 睡眠0.5s ==> 目的是为了让锁自己释放，防止在释放过程中打印锁的状态出现重量锁的情况
-        Thread.sleep(500);
+        // 睡眠3s ==> 目的是为了让锁自己释放，防止在释放过程中打印锁的状态出现重量锁的情况
+        Thread.sleep(3000);
         System.out.println("after lock");
         System.out.println(ClassLayout.parseInstance(lock).toPrintable());
     }
