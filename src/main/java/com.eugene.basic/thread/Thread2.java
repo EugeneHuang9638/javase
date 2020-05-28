@@ -56,7 +56,7 @@ class StopThreadUnsafe {
 
         @Override
         public String toString() {
-            return "User{" +
+            return "Lock{" +
                     "id=" + id +
                     ", name='" + name + '\'' +
                     '}';

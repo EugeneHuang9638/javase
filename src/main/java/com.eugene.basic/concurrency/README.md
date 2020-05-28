@@ -1,4 +1,4 @@
-# java并发编程
+java并发编程
 
 ## 一、java线程与操作系统(centos 7 64位，以下简称centos)的关系
 
@@ -209,7 +209,7 @@
   ```shell
   # 1. 编译成动态链接库
   # 说明下-I后面的参数: 分别指定jdk安装目录的include文件夹和include/linux文件夹
-  # 因为我在环境变量中配置了JAVA_HOME，所以我直接世界$JAVA_HOME引用了
+  # 因为我在环境变量中配置了JAVA_HOME，所以我直接使用$JAVA_HOME了
   # 后面的libMyNative.so文件，它的格式为lib{xxx}.so
   # 其中{xxx}为类中System.loadLibrary("yyyy")代码中yyyy的值
   gcc -I $JAVA_HOME/include -I $JAVA_HOME/include/linux -fPIC -shared -o libMyNative.so myThreadNew.c
@@ -238,8 +238,6 @@
 * 第一步：优化我们的`ExecMyNativeMethod.java`类，新增run方法，具体如下：
 
   ```java
-  package com.eugene.basic.thread.myNative;
-  
   public class ExecMyNativeMethod {
   
       /**
@@ -261,7 +259,7 @@
       }
   }
   ```
-
+  
 * 第二步：修改上述的`myThreadNew.c`文件为如下内容(用到了`JNI`，这个c文件在jdk的安装目录中可以找到，所以这是jdk提供的功能)：
 
   ```c
@@ -370,7 +368,6 @@
   // 一个是类对象一个是类实例对象。
   // 同时，此时还能调用类对象的静态非同步方法以及类实例的
   // 非同步方法。为什么呢？因为这些方法没有加锁啊，可以直接调用。
-  
   public class Demo {
   
       public static synchronized void test() {
@@ -425,7 +422,43 @@
   }
   ```
 
-#### 2.1.3 拥有线程安全的一段代码
+#### 2.1.3 锁Integer对象
+
+* 参考如下代码：
+
+  ```java
+  public static class BadLockOnInteger implements Runnable{
+      public static Integer i = 0;
+  
+      static BadLockOnInteger instance = new BadLockOnInteger();
+  
+      @Override
+      public void run() {
+          for (int j = 0; j < 10000000; j++) {
+              synchronized(i) {
+                  // 在jvm执行时, 这是这样的一段代码:  i = Integer.valueOf(i.intValue() + 1),
+                  // 跟踪Integer.valueOf()源码可知, 每次都是返回一个新的Integer对象, 导致加锁的都是新对象,当然会导致多线程同步失效
+                  i++;
+              }
+          }
+      }
+  
+      public static void main(String[] args) throws InterruptedException {
+          Thread t1 = new Thread(instance);
+          Thread t2 = new Thread(instance);
+  
+          t1.start();
+          t2.start();
+  
+          t1.join();
+          t2.join();
+  
+          System.out.println(i);
+      }
+  }
+  ```
+
+#### 2.1.4 拥有线程安全的一段代码
 
 * 代码如下：
 
@@ -466,7 +499,7 @@
   }
   ```
 
-#### 2.1.4  可重入性(包括继承)
+#### 2.1.5  可重入性(包括继承)
 
 * 概念解释：**所谓可重入性就是在有锁的方法内调用另一个加锁的方法**
 
@@ -533,16 +566,14 @@
   }
   ```
 
-#### 2.1.5 Synchronized释放锁的几种情况
+#### 2.1.6 Synchronized释放锁的几种情况
 
 * Synchronized关键字是**手动上锁自动释放锁**的。同时自动释放锁包括：`加锁代码块执行结束或者抛出的异常`
 * 同时，在执行await方法时，锁会被自动释放。
 
-#### 2.1.6 特点总结
+#### 2.1.7 特点总结
 
 * 具有可重入性、可见性、原子性。
-
-
 
 ### 2.2 API之wait/notify/notifyAll
 
@@ -894,7 +925,7 @@
 
 #### 3.3.2 何为大小端模式
 
-* 参考链接：[https://www.cnblogs.com/0YHT0/p/3403474.html](https://www.cnblogs.com/0YHT0/p/3403474.html)。大致总结为：**我们的数据是存在内存中的，而每个cpu对应的存储方式是不一致的。**所谓大端模式就是高位存在内存低位上，eg：假设要存储12345678这个数字时，8属于个位、7属于十位.....以此类推。那么，我们就能知道1是最高位，所以它会被存到内存的低位。拿上述链接的总结来说就是如下表所示：
+* 参考链接：[https://www.cnblogs.com/0YHT0/p/3403474.html](https://www.cnblogs.com/0YHT0/p/3403474.html)。大致总结为：**我们的数据是存在内存中的，而每个cpu对应的存储方式是不一致的**。所谓大端模式就是高位存在内存低位上，eg：假设要存储12345678这个数字时，两两为一对。87属于第一位、56属于第二位.....以此类推。那么，我们就能知道12是最高位，所以它会被存到内存的低位。拿上述链接的总结来说就是如下表所示：
 
   |  内存地址  | 存储的数据（Byte） |
   | :--------: | :----------------: |
@@ -903,7 +934,7 @@
   | 0x00000002 |        0x56        |
   | 0x00000003 |        0x78        |
 
-  大致意思就是这样。小端模式的话，相反的。这里就不总结了。那么问题来了，我们如何知道我们的cpu是大端存储模式还是小端存储模式呢？java提供了如下api：
+  大致意思就是这样，**所以在大端模式下，最终取数据时(从低位开始取)**，于是完美还原**12345678**。小端模式的话，相反的。这里就不总结了。那么问题来了，我们如何知道我们的cpu是大端存储模式还是小端存储模式呢？java提供了如下api：
 
   ```java
   // 输出结果参考如下内容：
@@ -932,11 +963,10 @@
   
           System.out.println("after hashcode");
           System.out.println(ClassLayout.parseInstance(user).toPrintable());
-  
       }
   }
   ```
-
+  
 * 运行结果如下：
 
   ![证明hashcode.png](./证明hashcode.png)
@@ -1947,6 +1977,11 @@
       } finally {
           // 当线程在自旋的过程中抛出了异常
           // 则取消此线程的acquire操作
+          // 大致的操作就是把形参node前面的
+          // 所有状态为被取消的节点去掉，
+          // 并维护aqs这个队列，保证
+          // 最后一个节点的waitStatus 为0
+          // 正在park的节点的waitStatus为-1
           if (failed)
               cancelAcquire(node);
       }
@@ -1995,6 +2030,9 @@
       return false;
   }
   ```
+
+
+#### 6.4.9 公平锁加锁源码总结
 
 * aqs公平锁加锁源码总结：
 
@@ -2058,7 +2096,7 @@
       // 尝试去释放锁，与tryLock一样，有可能会失败
       // tryRelease具体源码分析将在下面给出
       if (tryRelease(arg)) {
-          // 如果进入此代码块，则代表所被释放了
+          // 如果进入此代码块，则代表锁被释放了
           // 此时要做的事就是唤醒后面的线程，即unpark
           // 但是unpark是有条件的
           // 第一：头结点 != null  ---> 只要aqs实例化了，基本上不会为null
