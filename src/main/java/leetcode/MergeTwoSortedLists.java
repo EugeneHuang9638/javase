@@ -30,8 +30,9 @@ public class MergeTwoSortedLists {
         l22.next = l23;
         l21.next = l22;
 
-        //System.out.println(merge(l11, l21));
-        System.out.println(iterate(l11, l21));
+        // System.out.println(merge(l11, l21));
+        // System.out.println(iterate(l11, l21));
+        System.out.println(iterateAgain(l11, l21));
     }
 
     /**
@@ -46,6 +47,71 @@ public class MergeTwoSortedLists {
      * 时间复杂度 o(m + n)  m, n为链表的长度
      * 空间复杂度 o(m + n)  因为递归会产生方法调用栈，最终也取决于两个链表的长度
      *
+     *
+     * 递归的本指就是一个单一的思想：
+     *   我们来分析下这个题目：将两个有序链表合并，返回的新链表仍然有序
+     *
+     *   链表这个数据结构不想数组，是连续的空间。它是分布在内存中的各个角落的，
+     *   它是节点与节点之间的关联。
+     *   其实链表就是一个对象：比如ListNode，只不过它内部有一些特殊的属性，比如
+     *   next。next属性维护的其实是另外一个ListNode对象，也就是通过这些引用
+     *   来维护了链表这个数据结构。
+     *
+     *   我们来分析下这两个链表
+     *    * 链表1：1->2->4
+     *    * 链表2：1->3->4
+     *   说它是两个链表，还不如说它是两个对象，
+     *   分别是listNode1和listNode2，只不过listNode1内部维护了一个属性listNode12，它的val为2
+     *
+     *
+     *   于是我们来拆解这道题，两个链表排序其实就是将listNode1和listNode2进行排序
+     *   也就是1和1进行排序
+     *
+     *   于是，我们定义：根据当前链表的val的比较大小，做出对应的引用修改
+     *   if (listNode1.val == listNode2.val) {
+     *       listNode1.next = listNode2;
+     *   } else if (listNode1.val > listNode2.val) {
+     *       listNode1.next = listNode2;
+     *   } else {
+     *       listNode2.next = listNode1;
+     *   }
+     *
+     *   但是直接这么修改引用会出错，假设在listNode1.val == listNode2.val的情况下
+     *   这就导致了listNode1的next直接指向了listNode2
+     *   于是链表会变成 1 -> 1 -> 3 -> 4
+     *   即listNode1中的2和4都被丢失了
+     *
+     *   所以我们应该定义一个方法：比较两个链表，然后升序返回
+     *   即继续按照上面的逻辑，我们应该把代码修改成如下样子：
+     *   if (listNode1.val == listNode2.val) {
+     *       // 将listNode1的next指向 listNode.next和listNode2的比较结果
+     *       listNode1.next = sortNode(listNode1.next, listNode2);
+     *   } else if (listNode1.val > listNode2.val) {
+     *       listNode1.next = sortNode(listNode1.next, listNode2);
+     *   } else {
+     *       // 将listNode2的next指向，listNode2.next和listNode1的比较结果
+     *       listNode2.next = sortNode(listNode2.next, listNode1);
+     *   }
+     *
+     *   我们在比较listNode1和listNode2时，
+     *   如果他们相等，那么我就把listNode1的next指向一个排序后的链表，
+     *   这个链表是什么呢？这个链表就是listNode1的next节点与listNode2的排序结果。
+     *   我们假设此时listNode1和listNode2的链表结构仅为如下所示：
+     *   listNode1: 1 -> 2
+     *   listNode2: 1
+     *   此时的listNode1.val == listNode2.val
+     *   于是：listNode1.next = sortNode(listNode1.next, listNode2);
+     *   还是用上面的说法来说：如果直接使用listNode1.next = listNode2
+     *   即listNode1的next属性指向listNode2，那么listNode1之前的next属性
+     *   就会被丢失，最终链表变成了 1 -> 1
+     *
+     *   所以我们的listNode1.next应该要指向listNode1.next与listNode2的比较结果
+     *   listNode1.next与listNode2的比较结果为：listNode2的next要指向listNode1的next
+     *   所以最终链表会变成 1 -> 1 -> 2
+     *
+     *   同时，因为使用会拿某个节点的next做比较，那么难免会出现链表尾部，即next为null的情况
+     *   此时我们直接返回另外一个listNode即可。
+     *   于是，就出现了下面的merge方法
      * @param listNode1
      * @param listNode2
      * @return
@@ -65,6 +131,57 @@ public class MergeTwoSortedLists {
             listNode2.next = merge(listNode2.next, listNode1);
             return listNode2;
         }
+    }
+
+
+    /**
+     *
+     * 再次温故算法，按照自己思路实现迭代解法
+     *
+     * 迭代解决：
+     *
+     *  * 输入：1->2->4, 1->3->4
+     *  * 输出：1->1->2->3->4->4
+     *
+     *  创建一个虚拟节点，virtualListNode
+     *
+     *  比较两个节点，
+     *  当listNode1和listNode2相比，
+     *  将小的那个放在virtualListNode的next下，
+     *  假设listNode1.val > listNode2
+     *
+     *  那么virtualListNode.next = listNode1.val
+     *
+     *  同时再将listNode1.next 与listNode2相比较
+     *
+     *  以此循环，这样的话，就能比较到链表中的每一个元素了
+     *
+     * @param listNode1
+     * @param listNode2
+     * @return
+     */
+    public static ListNode iterateAgain(ListNode listNode1, ListNode listNode2) {
+        ListNode virtualListNode = new ListNode(-999);
+
+        ListNode tmpListNode = virtualListNode;
+
+        while (listNode1 != null && listNode2 != null) {
+            if (listNode1.val > listNode2.val) {
+                tmpListNode.next = listNode2;
+                listNode2 = listNode2.next;
+            } else if (listNode1.val <= listNode2.val) {
+                tmpListNode.next = listNode1;
+                listNode1 = listNode1.next;
+            }
+
+            tmpListNode = tmpListNode.next;
+        }
+
+        // 有可能出现listNode1 != null 或者 listNode2 != null的情况
+        tmpListNode.next = listNode1 != null ? listNode1 : listNode2;
+
+
+        return virtualListNode.next;
     }
 
     /**

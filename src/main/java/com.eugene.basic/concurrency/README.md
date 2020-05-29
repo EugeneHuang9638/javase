@@ -344,7 +344,7 @@ java并发编程
   public class Demo {
   
       public void test() {
-          //synchronized(this)锁定的是当前类的实例,这里锁定的是Demo2类的实例
+          //synchronized(this)锁定的是当前类的实例,这里锁定的是Demo类的实例
           synchronized (this) {
               System.out.println(Thread.currentThread().getName());
           }
@@ -397,19 +397,19 @@ java并发编程
   
       public void test1() {
           synchronized (s1) {
-              System.out.println("t1 start...");
+              System.out.println("t1 start");
               try {
                   TimeUnit.SECONDS.sleep(2);
               } catch (InterruptedException e) {
                   e.printStackTrace();
               }
-              System.out.println("t1 end...");
+              System.out.println("t1 end");
           }
       }
   
       public void test2() {
           synchronized (s2) {
-              System.out.println("t2 start...");
+              System.out.println("t2 start");
           }
       }
   
@@ -512,7 +512,7 @@ java并发编程
   public class Demo {
   
       public synchronized void test1() {
-          System.out.println("test1 start.........");
+          System.out.println("test1 start");
           try {
               TimeUnit.SECONDS.sleep(1);
           } catch (InterruptedException e) {
@@ -522,7 +522,7 @@ java并发编程
       }
   
       public synchronized void test2() {
-          System.out.println("test2 start.......");
+          System.out.println("test2 start");
       }
   
       public static void main(String[] args) {
@@ -538,13 +538,13 @@ java并发编程
   public class Demo {
   
       synchronized void test() {
-          System.out.println("demo1 test start........");
+          System.out.println("demo test start");
           try {
               TimeUnit.SECONDS.sleep(1);
           } catch (InterruptedException e) {
               e.printStackTrace();
           }
-          System.out.println("demo1 test end........");
+          System.out.println("demo test end");
       }
   
       public static void main(String[] args) {
@@ -557,10 +557,10 @@ java并发编程
   
       @Override
       synchronized void test() {
-          System.out.println("demo2 test start........");
+          System.out.println("demo2 test start");
           // 此处调用了父类的方法
           super.test();
-          System.out.println("demo2 test end........");
+          System.out.println("demo2 test end");
       }
   
   }
