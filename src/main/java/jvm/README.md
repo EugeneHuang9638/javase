@@ -16,8 +16,8 @@
   public static Class<?> forName(String className)
                   throws ClassNotFoundException {
       // 拿到调用方的Class类，假设在类A的main方法中调用了Class.forName("com.xxx.xxx");
-      // 那么获取到的调用方的Class类就是类A。
-      // 最终会使用类A的类加载器将com.xxx.xxx类加载到jvm中
+      // 那么获取到的调用方的Class类就是类A  <==>  caller就是A的class对象。
+      // 最终会使用类A的类加载器将com.xxx.xxx类加载到jvm中 <==> ClassLoader.getClassLoader(caller)
       Class<?> caller = Reflection.getCallerClass();
       return forName0(className, true, ClassLoader.getClassLoader(caller), caller);
   }
@@ -44,8 +44,8 @@
   解析：
 
   ```txt
-  上面有说道，全局委派机制。因为在我们自定义写的类A中调用了Class.forName("com.mysql.jdbc.Driver");方法，
-  所以com.mysql.jdbc.Driver的加载是由AppClassLoader完成的。而且在执行Class.forName("com.mysql.jdbc.Driver");代码时，做了一件事，就是把mysql的驱动添加到DriverManager的registeredDrivers属性中去了。最后是直接从registeredDrivers属性中拿驱动获取连接的。
+  上面有说到，全局委派机制。因为在我们自定义写的类A中调用了Class.forName("com.mysql.jdbc.Driver");方法，
+  所以com.mysql.jdbc.Driver的加载是由AppClassLoader完成的。而且在执行Class.forName("com.mysql.jdbc.Driver")代码时，使用的是扩展类加载器把它加载到jvm中去的，在加载的过程中，调用了com.mysql.jdbc.Driver类的静态代码块，主要是把mysql的驱动添加到DriverManager的registeredDrivers属性中去了。最后在使用这个驱动类时是直接从registeredDrivers属性中拿驱动获取连接的。
   ```
 
 * 情况二：(`破坏双亲委派机制`)
@@ -58,7 +58,7 @@
   解析：
 
   ```txt
-  可以看到，我们并没有手动将com.mysql.jdbc.Driver类记载到jvm中去。而DriverManager是java.sql包下的，位于rt.jar包。所以DriverManager肯定是由根加载器加载到jvm的。而在记载DriverManager类时，内部的静态代码会使用java的spi技术。读取classpath下META-INF/services/java.sql.Driver文件，里面存储的就是一些实现了java.sql.Driver接口的实现类。其中就包括com.mysql.jdbc.Driver。我们拿到的还只是字符串，我们要把它加载到jvm中，会用到Class.forName()的api。由上述的全盘委托机制可知，在DriverManager内部执行Class.forName()方法，最终肯定使用的是根加载器。但是com.mysql.jdbc.Driver并不在%JAVA_HOME%/bin/jre/lib路径下，所以肯定是不能加载到的。此时就用到了ClassLoader cl = Thread.currentThread().getContextClassLoader()代码来获取当前线程的类加载器, 此段代码获取的是系统加载器，即AppClassLoader，然后使用Class.forName的另外一个能指定类加载器的api去加载类。所以最终是使用系统加载器来加载com.mysql.jdbc.Driver类
+  可以看到，我们并没有手动将com.mysql.jdbc.Driver类加载到jvm中去。而DriverManager是java.sql包下的，位于rt.jar包。所以DriverManager肯定是由根加载器加载到jvm的。而在加载DriverManager类时，内部的静态代码会使用java的spi技术。读取classpath下META-INF/services/java.sql.Driver文件，里面存储的就是一些实现了java.sql.Driver接口的实现类。其中就包括com.mysql.jdbc.Driver。我们拿到的还只是字符串，我们要把它加载到jvm中，会用到Class.forName()的api。由上述的全盘委托机制可知，在DriverManager内部执行Class.forName()方法，最终肯定使用的是根加载器。但是com.mysql.jdbc.Driver并不在%JAVA_HOME%/bin/jre/lib路径下，所以肯定是不能加载到的。此时就用到了ClassLoader cl = Thread.currentThread().getContextClassLoader()代码来获取当前线程的类加载器, 此段代码获取的是系统加载器，即AppClassLoader，然后使用Class.forName的另外一个能指定类加载器的api(java.lang.Class#forName(java.lang.String, boolean, java.lang.ClassLoader))去加载类。所以最终是使用系统加载器来加载com.mysql.jdbc.Driver类
   ```
 
 ## 五、JVM内存模型
@@ -193,7 +193,7 @@
 * Q: try catch时，finally块一定会执行么？
 * A: 程序正常运行时，以及正常退出时肯定会被执行。但是如果手动执行`System.exit(0)`代码以及在执行finally代码块之前把进程kill掉了，那就不会被执行了
 
-## jvm工具
+## 八、jvm工具
 
 ### Jinfo
 
@@ -201,3 +201,127 @@
 
 
 
+## 九、常见问题总结
+
+### 一、讲讲jvm内存结构
+
+```txt
+jvm分为两个大区域一个是线程间共享的一个是线程私有的
+
+其中线程间共享的区域包含：堆、方法区(存储类的元信息)
+
+线程私有的包含: 栈
+
+其中栈又包含：程序计数器、栈帧、本地方法栈, 每启动一个线程就会创建一个对应的栈, 线程方法入口处每调用一个方法
+就创建一个栈帧
+其中栈帧又包括：局部变量表、操作数栈、动态链接、方法出口。
+
+最后再说一下堆结构，在jvm中堆分为新生代、老年代，他们按照1:2的比例分配着堆内存
+其中新生代包含eden区、survivor from区、survivor to区。他们分别以8:1:1的比例分配着新生代的内存。
+```
+
+### 二、讲讲什么情况下会出现内存溢出，内存泄露？
+
+```txt
+内存溢出是指jvm运行的内存满了，一般是指堆内存满了，然后抛出OutOfMemoryException。
+出现这种情况时，我们要分析具体的原因：是因为程序的bug(死循环创建引用对象)、还是
+因为业务量数据大，jvm的内存无法存储。如果是前者，我们可以使用java自带的jstack命令
+来定位到具体的代码行进而解决问题，如果是后者，我们可以更新程序运行的堆内存，具体
+更新多大还是要根据实际的项目业务来具体分析。
+
+所谓内存泄露，是指对象有被应用，但是永远不会被使用到。
+最常见的就是在使用ThreadLocal中时的内存泄露，因为ThreadLocal存储时，是以threadLocal
+自身为key进行存储的，在它底层中，threadLocal存储时指定了key为弱引用，所以当内存不够时，
+gc会回收threadLocal这些弱引用，最终导致value对应的key为null，又由于threadLocal的特性，
+在获取值时，不可能出获取key为null对应的value，所以造成了内存泄露。
+```
+
+### 三、说说Java线程栈 
+
+```txt
+参考上述jvm内存结构中描述到的栈数据结构
+```
+
+### 四、JVM年轻代到老年代的晋升过程的判断条件是什么？
+
+```txt
+首先先介绍下一个对象晋升老年代的过程：
+一个对象被new出来时，首先放入的是eden区，当eden区满了之后会触发一次young gc，
+此时会将未被回收的对象移至survivor区，当一个对象在survivor区经历了15此young gc
+时，就会晋升到老年代。
+这是最正常的逻辑，同时也会出现几个特殊情况：
+1. 大对象的回收: 当一个对象的大小达到了jvm大对象的定义，此时这个对象就会直接晋升到老年代
+2. 对象比eden区大: 当我们new一个对象时，这个对象的内存比eden区还要大，则直接晋升至老年代。 ----------
+3. 对象达到了survivor区的50%: 比如在第一次youg gc时，发现有一个对象的大小达到了survivor区的50%时，survivor区无法
+存储这个对象，此时这个对象就会直接晋升到老年区。
+```
+
+### 五、JVM出现了Full GC很频繁，怎么去线上排查问题？
+
+```txt
+首先Full GC会触发STW机制，会让用户线程暂停，保证GC的安全执行，导致系统会出现一段时间的卡顿。
+其次，要触发Full GC，一般是老年区快满了或者是自己手动调用了System.gc()，后者一般在真实项目中
+不会手动去调用，所以问题一般就出现在前者了。于是我们要去分析项目为什么对象频繁会丢入老年代？
+排查方向: 
+1. 是否频繁的创建大对象
+2. 创建出来的对象大小是否超过了eden区
+3. 创建出来的对象大小是否达到了survivor区的50%
+
+如果是线上的项目，想要紧急修复就扩大堆内存。
+```
+
+### 六、类加载为什么要使用双亲委派模式，有没有什么场景是打破了这个模式？
+
+```txt
+首先双亲委派机制就是每个类加载器一开始不干活，先让自己的父加载器干活，
+每个加载器各尽其责，只能做自己分内的事情。所以使用双亲委派机制就保证了，
+高效性和安全性。
+双亲委派机制可以被打破，比如在加载mysql驱动时，不直接使用Class.forName("com.mysql.jdbc.Driver")代码，
+调用。而是直接使用DriverManager获取connect。它的底层原理是ExtClassLoader类加载器拿到了当前线程的
+类加载器 以及 使用java spi的机制来破坏的。
+```
+
+### 七、类的实例化顺序
+
+```txt
+执行父类静态块 -> 子类静态块 -> 父类非静态块 -> 父类构造方法 -> 子类非静态块 -> 子类构造方法
+```
+
+### 八、JVM垃圾回收机制，何时触发MinorGC等操作
+
+```txt
+当eden区满了
+```
+
+### 九、JVM 中一次完整的 GC 流程（从 ygc 到 fgc）是怎样的
+
+```txt
+参考第4个问题的分析
+```
+
+### 十、各种回收算法
+
+```txt
+GC最基础的算法有三种:
+标记-清除算法：
+分为两个阶段：标记和清除阶段，首先先标记出需要回收的对象，等真正回收时再将标记后的对象进行回收。
+缺点：内存不连续，比较碎片，无法存储相对于比较大的对象，最终会触发GC。(明明还有一些连续的内存，只是因为空间不连续的问题，导致不得不触发一次GC)，这种算法基本上不使用了。
+
+复制算法：
+将内存按容量划分为大小相等的两块，每次只使用其中的一块。当这一块用完后就将还存活的对象复制到另外
+一块内存区域上。解决了标记-清除算法的问题，内存不再碎片化。这种算法适用于堆内新生代的Survivor区。
+
+标记-整理算法：
+标记阶段与标记清除算法中的标记方式是一样的。但后续的步骤不一样，是将存活的对象都向一段移动，然后
+直接清理掉边界外的对象。适用于老年代
+
+我们常用的垃圾回收器一般是分代收集算法，其实就是结合了上述三种算法
+```
+
+### 十一、各种回收器，各自优缺点，重点CMS、G1
+
+```txt
+CMS、G1
+```
+
+### 十二、OOM错误，stackoverflow错误，permgen space错误
