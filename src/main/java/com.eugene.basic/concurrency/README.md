@@ -1660,9 +1660,9 @@ java并发编程
   > volatile int status = 0;
   > 
   > public void lock() {
-  >     while(!cas(0, 1)) {
-  >         yield();
-  > 	}
+  >         while(!cas(0, 1)) {
+  >             yield();
+  >      }
   > }
   > 
   > public void unlock() {
@@ -1675,7 +1675,7 @@ java并发编程
   > }
   > ```
   >
-  > 使用yield的方式无疑能解决占用cpu的问题。但是yield是让线程让出apu，后续要执行哪个线程完全是不可控的，若有多个线程执行了yield方法，最终cpu在调度线程执行时，需要在众多的线程中选择一个线程来执行，这无疑也是有cpu消耗的。针对此问题，于是出现了 **自旋 + volatile + sleep**的实现
+  > 使用yield的方式无疑能解决占用cpu的问题。但是**yield是让线程让出cpu**，后续要执行哪个线程完全是不可控的，若有多个线程执行了yield方法，最终cpu在调度线程执行时，需要在众多的线程中选择一个线程来执行，这无疑也是有cpu消耗的。针对此问题，于是出现了 **自旋 + volatile + sleep**的实现
 
 * `自旋 + volatile + sleep`
 
@@ -1684,7 +1684,7 @@ java并发编程
   > volatile int status = 0;
   > 
   > public void lock() {
-  >     while(!cas(0, 1)) {
+  >        while(!cas(0, 1)) {
   > 		sleep(20);
   > 	}
   > }
@@ -1708,14 +1708,14 @@ java并发编程
   > volatile int status = 0;
   > 
   > public void lock() {
-  >     while(!cas(0, 1)) {
+  >    	while(!cas(0, 1)) {
   > 		LockSupport.park()
   > 	}
   > }
   > 
   > public void unlock(Thread t) {
   > 	status = 0;
-  >     LockSupport.unpark(t);
+  >     	LockSupport.unpark(t);
   > }
   > 
   > public void cas(int originValue, int targetValue) {
@@ -1753,7 +1753,7 @@ java并发编程
 
 ### 6.3  AQS原理
 
-* **AQS(全称：Abstract Queued Synchronizer)**：其实就是内部维护了一个队列。其实就是维护了两个属性：**Node head**和**Node tail**，具体结构图如下：
+* **AQS(全称：Abstract Queued Synchronizer)**：其实就是内部维护了一个队列、两个属性：**Node head**和**Node tail**、一个共享标识变量**state**具体结构图如下：
 
   ![AQS结构图](./aqs/AQS模型图.png)
   
@@ -1761,16 +1761,21 @@ java并发编程
 
   ```txt
   head中的thread属性为null有两种情况。
-  第一：当线程A调用lock方法时，aqs队列没有被初始化。此时若线程2在线程1没有释放锁的情况下调用了lock方法，此时就会初始化这么一个aqs队列。此时的head为手动new出来的一个node，里面维护的thread为null。(请注意：这里的thread为null就表示当前有线程被持有锁了，锁被谁持有的呢？在exclusiveOwnerThread属性中可以看到持有锁的线程。)并且这个new出来的node的next指向维护当前线程的Node(即上述的Node2)
+  第一：当线程A调用lock方法时，aqs队列没有被初始化。此时若线程t1在线程1没有释放锁的情况下调用了lock方法，此时就会初始化这么一个aqs队列。此时的head为手动new出来的一个node，里面维护的thread为null。(请注意：这里的thread为null就表示当前有线程被持有锁了，锁被谁持有的呢？在exclusiveOwnerThread属性中可以看到持有锁的线程。)并且这个new出来的node的next指向维护线程t1的Node(即上述的Node2)
   
   第二：当head的next属性对应的thread获取到锁时，此时会做一个操作，就是把head移除(即上述的node2要替换node1了)。即修改head的next的引用，把它指向上述的Node2，并把Node1的next的prev属性置为null(其实就是Node2的prev属性)，以及将Node1的next中维护的thread也置为null，方便垃圾回收。
       
   所以这里有一个结论，如果aqs队列被初始化了，那么head中维护的thread属性一定为null，因为这个时候就代表有线程持有了这把锁。哪个线程呢？同上，可以在exclusiveOwnerThread属性中看到(在tryAcquire方法中获取锁成功时会将当前线程赋值给exclusiveOwnerThread属性)
   ```
 
-  
-
 ### 6.4 ReentrantLock 公平锁加锁源码分析
+
+* 我们以两种案例来分析源码
+
+  ```txt
+  case 1: 只有一个线程来加锁
+  case 2: 锁已经被线程占用了，此时t1来加锁。
+  ```
 
 #### 6.4.1 lock方法
 
@@ -1792,20 +1797,21 @@ java并发编程
    先说明下tryAcquire(arg)逻辑
    此逻辑主要做的就是尝试去加锁，为什们叫尝试去加锁呢？
    因为有可能会加锁失败呀！
-   于是我们先理解下tryAcquire(arg)的源码，源码分析在下面会展出
+   于是我们先理解下tryAcquire(arg)的源码，源码分析在下面的内容中会展出。
    由上面的代码块得知，此时的arg为1。
    这里要注意，只有当tryAcquire(arg)返回false时才会继续往下执行。
    
-   当第二个线程调用lock方法(线程一还未释放锁)时，若此时的state为1且和持有锁的线程不一致，
-   那么此时tryAcquire将会失败，那么此时就是返回false，于是执行
+   当第二个线程调用lock方法(线程一还未释放锁)时，若此时的state为1(锁正在被线程占有)且和持有锁的线程不一致，
+   那么此时tryAcquire将会失败，那么此时的就是返回false，于是执行
    acquireQueued(addWaiter(Node.EXCLUSIVE), arg)代码。
    所以首先会执行addWaiter(Node.EXCLUSIVE)代码，此代码可以查看下面的
    源码分析，主要是将当前未拿到锁的线程添加到队列中去或者一直在自旋(当队列中
    最后一个node释放了锁，就会cas失败， 最终自旋)，addWaiter(Node.EXCLUSIVE)
    方法会返回一个队列，一般返回队列了，那就说明线程添加到队列中去了。
    
-   接下来会执行acquireQueued方法，acquireQueued方法参考下面的源码分析 
+   接下来会执行acquireQueued方法，acquireQueued方法参考下面的源码分析。
    
+   我们根据case 1的案例来：此时只有一个线程来进行加锁。
    */
   public final void acquire(int arg) {
       if (!tryAcquire(arg) &&
@@ -1822,10 +1828,12 @@ java并发编程
   protected final boolean tryAcquire(int acquires) {
       // 获取到当前线程
       final Thread current = Thread.currentThread();
+          
       // 获取到aqs中的state变量 --> 此变量很重要，整个AQS就是以此变量作为标识
       // 若此变量为0   则标识没有线程占用过锁
-      // 若此变量为1   则标识由线程正在占用所
-      // 若次变量大于1 则标识是重入锁(线程重入了)
+      // 若此变量为1   则标识有线程正在占用锁
+      // 若此变量大于1 则标识是重入锁(线程重入了)
+      // 针对case1: 此时的c肯定为0
       int c = getState();
       if (c == 0) {
           // 上面说了，c == 0表示没有线程占用过锁
@@ -1837,7 +1845,8 @@ java并发编程
           // hasQueuedPredecessors()源码逻辑参考下面
           // 当hasQueuedPredecessors()返回false后，
           // 再执行cas操作，即将state从0改成1，
-          // 若case操作成功则设置aqs中exclusiveOwnerThread变量为当前线程, 标识当前是此线程持有了锁
+          // 若cas操作成功则设置aqs中exclusiveOwnerThread变量为当前线程, 标识当前是此线程持有了锁
+          // 针对case 1: 代码执行到此处就结束了
           if (!hasQueuedPredecessors() &&
               compareAndSetState(0, acquires)) {
               setExclusiveOwnerThread(current);
@@ -1865,13 +1874,15 @@ java并发编程
   ```java
   /**
    进入此方法内可能会有三种情况：
-   1. 整个aqs队列还未初始化，即head和tail都为null的情况下，此时返回false
+   1. 整个aqs队列还未初始化或者有多个线程交替获取过锁，即head和tail都为null的情况下，此时返回false
    2. 整个队列中只有一个节点，也就是只有head节点，即有两个线程竞争过锁，并且
       都获取到了锁且都释放了锁。此时的head为第二个node(维护第二个线程的node).
       此时的tail也为node，此时返回false
    3. 整个队列中只有两个节点，分别为head和正在持有锁的线程对应的node，此时的
       head和tail不相等，并且head的next不为空，当第三个线程进来，发现第二个node
       中维护的线程与自己不相等，返回true
+      
+   针对case 1: 进入到此方法，此时一定是上述说的第一重情况，返回false
    */
   public final boolean hasQueuedPredecessors() {
       // tail 和 head是父类AbstractQueuedSynchronizer维护的两个属性
@@ -1895,11 +1906,12 @@ java并发编程
      若一个线程进入此方法，那么一定是加锁不成功的情况
    */
   private Node addWaiter(Node mode) {
-      // 此时会new一个Node，此Node中thread属性为当前线程，nextWaiter为mode
+      // 此时会new一个Node，此Node中thread属性为当前线程
+      // nextWaiter为mode，若是从tryAcquire进入的，那么这个mode就是null
       Node node = new Node(Thread.currentThread(), mode);
   
       // 将AbstractQueuedSynchronizer类中的tail赋值为pred，
-      // 若是第一次调用waiter方法，此时的pred和tail都为null，于是会执行enq方法
+      // 若是第一次调用addWaiter方法，此时的pred和tail都为null，于是会执行enq方法
       Node pred = tail;
       if (pred != null) {
           node.prev = pred;
@@ -1913,7 +1925,7 @@ java并发编程
       // cas的操作就是，当我前面的节点是aqs中的tail属性时，那么就把自己放在tail.next中
       enq(node);
       
-      // 过了此步骤，则标识当前线程已经自旋结束并进入队列中了
+      // 执行到了这里，则标识当前线程已经自旋结束并进入队列中了
       return node;
   }
   ```
@@ -1923,11 +1935,16 @@ java并发编程
 * java.util.concurrent.locks.AbstractQueuedSynchronizer#enq
 
   ```java
-  // 形参node就是addWaiter创建的node
+  /* 
+   形参node就是addWaiter创建的node。
+   我们以锁正在被线程占用，此时线程t1来加锁的案例来理解enq代码.
+   此时的node就是管理t1的node
+   */
   private Node enq(final Node node) {
       // 死循环
       for (;;) {
-          // 拿到AbstractQueuedSynchronizer的tail属性, 此时为null
+          // 拿到AbstractQueuedSynchronizer的tail属性
+          // 因为此时aqs队列都没有生成。所以tail为null
           Node t = tail;
           if (t == null) { // Must initialize
               // 为null的情况下，则进行cas操作
@@ -1949,14 +1966,14 @@ java并发编程
                   t.next = node;
                   // 将t返回出去，此时的t为队列中的tail属性
                   return t;
-              }
+            }
           }
-      }
+    }
   }
   ```
-
+  
   调用enq方法初始化队列示意图
-
+  
   ![第一次执行enq方法初始化队列.png](./aqs/第一次执行enq方法初始化队列.png)
 
 #### 6.4.7 acquireQueued方法
