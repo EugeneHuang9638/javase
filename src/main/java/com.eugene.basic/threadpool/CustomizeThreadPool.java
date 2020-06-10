@@ -23,7 +23,8 @@ public class CustomizeThreadPool {
         // 第三个参数: 空闲时间
         // 第四个参数: 空闲时间对应的单位
         // 第五个参数: 使用哪种队列： 使用数组类型的阻塞队列
-        // 第六个参数: 拒绝策略 => AbortPolicy： 拒绝后直接抛出异常
+        // 第六个参数: 创建线程的工厂
+        // 第七个参数: 拒绝策略 => AbortPolicy： 拒绝后直接抛出异常
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
                 5,
                 5,
