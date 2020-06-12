@@ -29,6 +29,8 @@ import java.util.List;
  *   那么我们可以对树做一个中序遍历，如果遍历后的结果是一个升序数组，
  *   则表示为二叉查找树。在此过程中，我们可以记录每次遍历的最大值
  *
+ *   时间复杂度为O(n), 每个节点都要访问一次
+ *
  *
  *
  */
@@ -64,15 +66,16 @@ public class ValidBST {
             return true;
         }
 
+        // 对树进行中序遍历，如果是一颗二叉查找树，那么它的中序遍历后就是一个升序的数组
         List<Integer> sortedArr = inorder(root);
+        System.out.println(sortedArr);
 
-        int index = 0;
-        while (index < sortedArr.size()) {
-            if (index + 1 >= sortedArr.size()) {
+        for (int i = 0; i < sortedArr.size(); i++) {
+            if (i + 1 >= sortedArr.size()) {
                 break;
             }
 
-            if (sortedArr.get(index) >= sortedArr.get(index++)) {
+            if (sortedArr.get(i) >= sortedArr.get(i + 1)) {
                 return false;
             }
         }
@@ -83,7 +86,7 @@ public class ValidBST {
     public static void main(String[] args) {
         TreeNode t1 = new TreeNode(1, null, null);
         TreeNode t3 = new TreeNode(3, null, null);
-        TreeNode t2 = new TreeNode(0, null, t1);
+        TreeNode t2 = new TreeNode(2, t1, t3);
 
         System.out.println(isValidBST(t2));
 
