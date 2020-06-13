@@ -230,5 +230,6 @@
     |  BTLowestCommonAncestor.java  | [二叉树的最近公共祖先](https://leetcode-cn.com/problems/lowest-common-ancestor-of-a-binary-tree/) | 树             | 中等 | 2020/06/11 | 给定一个二叉树, 找到该树中两个指定节点的最近公共祖先。leetcode 236题。具体参考`BTLowestCommonAncestor.java`类 |
     |      PowerOfNumber.java       |                         求2的幂次方                          | 分治法         | 简单 | 2020/06/11 |               给定一个数m和n，返回的m的n次方。               |
     |        MaxProfit.java         | [买卖股票的最佳时机 II](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-ii/) | 贪心算法       | 简单 | 2020/06/11 | 买卖股票的最佳时机 II。leetcode的 122题。具体参考 `MaxProfit.java`类 |
-    |    BreadthFirstSearch.java    |                         广度优先搜索                         | 树             | 简单 | 2020/06/12 | 实现一颗二叉树的广度优先搜索算法。以及实现一种特殊顺序的广度优先算法(`还未成功`)。 |
+    |    BreadthFirstSearch.java    |                         广度优先搜索                         | 树             | 简单 | 2020/06/12 | 实现一颗二叉树的广度优先搜索算法。以及实现一种特殊顺序的广度优先算法(`leetcode 103`)。 |
+    |     DeepFirstSearch.java      |                         深度优先搜索                         | 树             | 简单 | 2020/06/12 |              实现一颗二叉树的深度优先搜索算法。              |
 
