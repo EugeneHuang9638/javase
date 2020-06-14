@@ -71,7 +71,7 @@ public class DeepFirstSearch {
         TreeNode t3 = new TreeNode(3, t6, t7);
 
         TreeNode t1 = new TreeNode(1, t2, t3);
-//        System.out.println(deepFirstSearch(t1));
-        System.out.println(deepFirstSearch2(t1));
+        System.out.println(deepFirstSearch(t1));
+//        System.out.println(deepFirstSearch2(t1));
     }
 }
