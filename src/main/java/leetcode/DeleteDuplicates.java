@@ -136,6 +136,7 @@ public class DeleteDuplicates {
         ListNode node55 = new ListNode(4);
         node44.next = node55;
 
-        System.out.println(deleteDuplForHash(node1));
+        //System.out.println(deleteDuplForHash(node1));
+        System.out.println(deleteDupl(node1));
     }
 }

@@ -5,8 +5,8 @@
   |          类加载器类型          |                      作用                       |                           获取方式                           |                   备注                   |
   | :----------------------------: | :---------------------------------------------: | :----------------------------------------------------------: | :--------------------------------------: |
   |   系统加载器(AppClassLoader)   | 加载当前应用`classpath`下的class文件至jvm内存中 | ClassLoader appClassLoader = ClassLoader.getSystemClassLoader() | 线程上下文获取的类加载器就是`系统加载器` |
-  |   扩展加载器(ExtClassLoader)   |   加载`%JAVA_HOME%/bin/ext`路径下的所有jar包    |   ClassLoader extClassLoader = appClassLoader.getParent()    |                    无                    |
-  | 根加载器(BootstrapClassLoader) | 加载`%JAVA_HOME%/bin/jre/lib`路径下的所有jar包  |   ClassLoader rootClassLoader = extClassLoader.getParent()   |  在java中获取的为null, 因为是由C++写的   |
+  |   扩展加载器(ExtClassLoader)   | 加载`%JAVA_HOME%/jre/lib/ext`路径下的所有jar包  |   ClassLoader extClassLoader = appClassLoader.getParent()    |                    无                    |
+  | 根加载器(BootstrapClassLoader) |   加载`%JAVA_HOME%/jre/lib`路径下的所有jar包    |   ClassLoader rootClassLoader = extClassLoader.getParent()   |  在java中获取的为null, 因为是由C++写的   |
 
 ## 二、如何将一个java文件加载到jvm内存 -- Class.forName() -- "全盘委派机制"
 
@@ -45,7 +45,7 @@
 
   ```txt
   上面有说到，全局委派机制。因为在我们自定义写的类A中调用了Class.forName("com.mysql.jdbc.Driver");方法，
-  所以com.mysql.jdbc.Driver的加载是由AppClassLoader完成的。而且在执行Class.forName("com.mysql.jdbc.Driver")代码时，使用的是扩展类加载器把它加载到jvm中去的，在加载的过程中，调用了com.mysql.jdbc.Driver类的静态代码块，主要是把mysql的驱动添加到DriverManager的registeredDrivers属性中去了。最后在使用这个驱动类时是直接从registeredDrivers属性中拿驱动获取连接的。
+  所以com.mysql.jdbc.Driver的加载是由AppClassLoader完成的。而且在执行Class.forName("com.mysql.jdbc.Driver")代码时，使用的是扩展类加载器(因为jdbc是第三方jar包)把它加载到jvm中去的，在加载的过程中，调用了com.mysql.jdbc.Driver类的静态代码块。静态代码块的主要逻辑是把mysql的驱动添加到DriverManager的registeredDrivers属性中去了。最后在DriverManager.getConnection方法需要使用到这个驱动类时是直接从registeredDrivers属性中拿驱动获取连接的。
   ```
 
 * 情况二：(`破坏双亲委派机制`)
@@ -67,7 +67,7 @@
 
   ![jvm内存模型.png](./jvm内存模型.png)
 
-* 整理下jvm线程私用的内存结构
+* 整理下jvm线程私有的内存结构
 
   |      类目       |                        作用                        |                             备注                             |
   | :-------------: | :------------------------------------------------: | :----------------------------------------------------------: |
@@ -77,7 +77,7 @@
   | 栈帧-局部变量表 |               存储方法内部定义的变量               | 1. 方法中具体定义的变量名，在内部都不会存在，jvm不在乎你的变量名是什么<br>2. 当执行store相关指令时，会将变量存储到局部变量表中 |
   |  栈帧-操作数栈  |             临时存储方法内部定义的变量             | 1. 当执行const相关的指令时，会将变量临时存储到操作数栈中<br>2. 当执行load相关指令时，会将局部变量表中的变量移动到操作数栈中 |
   |  栈帧-动态链接  |          java中多态的机制就是靠它来完成的          |                                                              |
-  |                 |                 栈帧执行结束的出口                 | 方法结束的出口一共有两个: <br>1. 正常return<br>2.方法出异常  |
+  |  栈帧-方法出口  |                 栈帧执行结束的出口                 | 方法结束的出口一共有两个: <br>1. 正常return<br>2.方法出异常  |
 
   
 
