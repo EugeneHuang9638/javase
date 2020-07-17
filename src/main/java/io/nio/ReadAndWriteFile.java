@@ -35,7 +35,6 @@ public class ReadAndWriteFile {
                 byte[] bytes = bf.array();
                 System.out.write(bytes, 0, length);
                 System.out.println();
-
             }
 
             channel.close();
