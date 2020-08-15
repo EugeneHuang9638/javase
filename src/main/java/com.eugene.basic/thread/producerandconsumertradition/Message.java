@@ -1,4 +1,4 @@
-package com.eugene.basic.thread.producerandconsumer;
+package com.eugene.basic.thread.producerandconsumertradition;
 
 public class Message {
     String content;

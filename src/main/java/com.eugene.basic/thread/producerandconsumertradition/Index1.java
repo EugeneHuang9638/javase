@@ -1,4 +1,4 @@
-package com.eugene.basic.thread.producerandconsumer;
+package com.eugene.basic.thread.producerandconsumertradition;
 
 import java.util.LinkedList;
 import java.util.UUID;
