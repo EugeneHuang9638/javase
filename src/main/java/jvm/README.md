@@ -325,3 +325,113 @@ CMS、G1
 ```
 
 ### 十二、OOM错误，stackoverflow错误，permgen space错误
+
+
+
+## 十、jvm常见问题与实战
+
+### 10.1 jvm垃圾回收的时候如何确定垃圾？是否知道什么是GC Roots?
+
+```txt
+什么是垃圾？
+  内存中不再被使用到的空间就是垃圾。
+GC Roots(根可达算法)是判断垃圾的一种算法，具体的流程为如下：
+  枚举根节点做可达性分析。从所有的根节点开始，挨个遍历，通过他们的依赖关系遍历所有能遍历到的对象，能遍历到的对象就是存活着的。不能遍历到的对象就是“垃圾”，需要被回收。
+```
+
+如下区域中的对象可以被视为**根**节点
+
+| jvm中栈帧中的局部变量表 | 方法区中的类静态属性              |
+| ----------------------- | --------------------------------- |
+| 方法区中的常量          | 本地方法栈中JNI(Native)引用的对象 |
+
+总结就是：**局部变量表、常量、静态属性、JNI引用的对象**
+
+代码示例：
+
+```java
+/**
+ * 可以被视为根对象的情况
+ * 1、栈的栈帧的局部变量表中引用的对象
+ * 2、静态属性
+ * 3、常量
+ * 4、JNI中的native
+ */
+public class GCRootDemo {
+
+    // 静态属性可以当做根
+    private static GCRootDemo1 gcRootDemo1;
+
+    // 常量也可以当做根
+    private static final GCRootDemo2 gcRootDemo2 = new GCRootDemo2();
+
+    public static void m1() {
+        // 一个方法在调用的时候，就会产生一个栈帧，内部创建的对象就会存到局部变量表中去，因此demo也是一个根对象
+        GCRootDemo demo = new GCRootDemo();
+
+        System.gc();
+        System.out.println("第一次GC完成");
+    }
+
+    public static void main(String[] args) {
+        m1();
+    }
+}
+
+class GCRootDemo1 {}
+
+class GCRootDemo2 {}
+```
+
+### 10.2 你说你做过JVM调优和参数配置，请问如何盘点查看JVM系统默认值
+
+* jvm参数类型的种类
+
+  ```txt
+  1、标配参数 eg: java -version,   java -help 基本上不会变
+  2、x参数(了解)
+  3、xx参数  ---- 比较重要
+  注意： -Xmx和-Xms这两个参数也属于xx参数
+  -Xmx1024m 等同于 --XX:MaxHeapSize=1024m
+  -Xms1024m 等同于 --XX:InitialHealSize=1024m
+  同时，jvm在加载的过程中，会根据你当前硬件的配置来决定最大堆内存为多少，一般为电脑硬件总内存的1/4
+  最小堆内存为1/64
+  eg: 电脑为16G，那么最大堆内存就会设置成4G，最小堆内存为0.25G
+  ```
+
+* 答案：
+
+  ```txt
+  1、使用jps定位java进程id
+  2、使用jinfo -flag 具体参数名 进程id ==> 查看具体的某个参数的值
+     或者
+     使用jinfo -flags 进程id ==> 查看所有的参数值
+  ```
+
+#### 10.2.1 xx参数之boolean类型
+
+* 规则： **-XX:+AAA**    **-XX:-BBB**
+
+  ```TXT
+  如上规则表示，jvm在启动的时候开启AAA功能，关闭BBB功能
+  ```
+
+* 示例：(结合jps + jinfo命令查看)
+
+  ![动态获取运行中的java程序中的某个jvm参数](./动态获取运行中的java进程的某个jvm参数.png)
+
+#### 10.2.2 xx参数之K,V类型
+
+* 规则：**-XX:属性key=value**
+* 示例：与**10.2.1**类似
+
+### 10.3 查看jvm所有参数
+
+* 方法一：使用 **jinfo -flags 线程id**
+
+* 方法二：
+
+  ```txt
+  1、java -XX:PrintFlagsInitial  ==> 列出来的是jvm默认添加的全局参数
+  2、java -XX:PrintFlagsFinal  ==> 列出来的是jvm默认添加的全局参数，同时包含一些自定义的参数":="用冒号等号来区别
+  ```
