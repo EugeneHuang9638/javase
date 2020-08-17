@@ -55,6 +55,14 @@ class Producer extends Thread {
                     ValidSynchronized.lock.wait();
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
+                    // main方法中对producer线程进行中断了
+                    // 就会抛出InterruptedException异常。
+                    // 但这有个坑，就是外部调用了当前线程的interrupt()
+                    // 方法后，会抛出InterruptedException异常，
+                    // 同时，当前线程的中断标识位就又置为false了
+                    // 因为循环的条件是当前线程不是中断状态,
+                    // 我们为了让Producer线程停止，所以catch中还调用了
+                    // 当前线程的interrupt()方法
                     this.interrupt();
                 }
             }

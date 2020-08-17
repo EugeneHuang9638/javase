@@ -233,7 +233,7 @@ jvm分为两个大区域一个是线程间共享的一个是线程私有的
 最常见的就是在使用ThreadLocal中时的内存泄露，因为ThreadLocal存储时，是以threadLocal
 自身为key进行存储的，在它底层中，threadLocal存储时指定了key为弱引用，所以当内存不够时，
 gc会回收threadLocal这些弱引用，最终导致value对应的key为null，又由于threadLocal的特性，
-在获取值时，不可能出获取key为null对应的value，所以造成了内存泄露。
+在获取值时，不可能获取出key为null对应的value，所以造成了内存泄露。
 ```
 
 ### 三、说说Java线程栈 
@@ -247,13 +247,12 @@ gc会回收threadLocal这些弱引用，最终导致value对应的key为null，�
 ```txt
 首先先介绍下一个对象晋升老年代的过程：
 一个对象被new出来时，首先放入的是eden区，当eden区满了之后会触发一次young gc，
-此时会将未被回收的对象移至survivor区，当一个对象在survivor区经历了15此young gc
+此时会将未被回收的对象移至survivor区，当一个对象在survivor区经历了15次young gc
 时，就会晋升到老年代。
 这是最正常的逻辑，同时也会出现几个特殊情况：
 1. 大对象的回收: 当一个对象的大小达到了jvm大对象的定义，此时这个对象就会直接晋升到老年代
 2. 对象比eden区大: 当我们new一个对象时，这个对象的内存比eden区还要大，则直接晋升至老年代。 ----------
-3. 对象达到了survivor区的50%: 比如在第一次youg gc时，发现有一个对象的大小达到了survivor区的50%时，survivor区无法
-存储这个对象，此时这个对象就会直接晋升到老年区。
+3. 对象达到了survivor区的50%: 比如在第一次youg gc时，发现有一个对象的大小达到了survivor区的50%时，survivor区无法存储这个对象，此时这个对象就会直接晋升到老年区。
 ```
 
 ### 五、JVM出现了Full GC很频繁，怎么去线上排查问题？
