@@ -25,6 +25,15 @@ public class CustomizeThreadPool {
         // 第五个参数: 使用哪种队列： 使用数组类型的阻塞队列
         // 第六个参数: 创建线程的工厂
         // 第七个参数: 拒绝策略 => AbortPolicy： 拒绝后直接抛出异常
+
+        /**
+         * 举个例子：
+         * 若设置了corePoolSize为7  maximumPoolSize为20, 阻塞队列长度为50，
+         * 当100个并发过来时，会怎么处理？
+         * 前面7个会立即执行，后面13个会开线程来处理任务，然后有50个会进入队列排队，剩下的30个则执行线程池设置好了的拒绝策略。
+         *
+         *
+         */
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
                 5,
                 5,
