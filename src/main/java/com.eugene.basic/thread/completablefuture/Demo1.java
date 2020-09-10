@@ -2,6 +2,7 @@ package com.eugene.basic.thread.completablefuture;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -40,7 +41,10 @@ public class Demo1 {
 
         //testCompletableFutureHandler();
 
-        testCompletableFutureThenApply();
+        //testCompletableFutureThenApply();
+
+        testCompletableFutureAnyOf();
+
         threadPool.shutdown();
     }
 
@@ -128,6 +132,53 @@ public class Demo1 {
             String next = iterator.next();
             System.out.println("key = " + next + " value = " + map.get(next));
         }
+
+    }
+
+    /**
+     * 测试CompletableFuture的anyOf、allOf方法
+     * allOf访问类似于JUC下面的CyclicBarrier, 等待线程都执行完后再继续往下执行
+     *
+     *
+     * @throws Exception
+     */
+    public static void testCompletableFutureAnyOf() throws Exception {
+        CompletableFuture<String> future1 = CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(new Random().nextInt(5) * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("查询商品图片");
+            return "iphone11.png";
+        });
+
+        CompletableFuture<String> future2 = CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(new Random().nextInt(5) * 1000);
+                System.out.println("查询商品SKU");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return "黑色 + 128G";
+        });
+
+        CompletableFuture<String> future3 = CompletableFuture.supplyAsync(() -> {
+            try {
+                Thread.sleep(new Random().nextInt(5) * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("查询商品库存");
+            return "128";
+        });
+
+        CompletableFuture<Void> allOf = CompletableFuture.allOf(future1, future2, future3);
+        allOf.get();
+        System.out.println("等待上述三个任务都执行完毕后再执行");
+
+        CompletableFuture<Object> anyOf = CompletableFuture.anyOf(future1, future2, future3);
+        System.out.println("上述三个任务只要有一个任务执行完成就结束，结束后的结果为：" + anyOf.get());
 
     }
 
