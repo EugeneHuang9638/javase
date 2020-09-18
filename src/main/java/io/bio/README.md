@@ -2,7 +2,7 @@
 
 ### 一、BIO缺点
 
-* BIO有一个很大的缺点：整个服务端有两个地方会阻塞。第一个是socket.accept()处，第二个是获取输入流socket.getInputStream()并使用输入流进行读取数据时，也会进行阻塞。
+* BIO有一个很大的缺点：整个服务端有两个地方会阻塞。第一个是**socket.accept()**处，第二个是获取输入流socket.getInputStream()并使用输入流进行读**取数据(inputStream.read(bytes))**时，也会进行阻塞。
 
   如下所示：
 
