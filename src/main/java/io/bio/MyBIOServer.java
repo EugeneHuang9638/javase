@@ -14,33 +14,33 @@ import java.util.concurrent.TimeUnit;
  */
 public class MyBIOServer {
 
+    /**
+     * 创建一个任务长度为10的线程池，同时工作的线程数为5, 最大线程数为10
+     * 空闲时间为60s，拒绝策略为抛异常
+     */
+    private static final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+            5,
+            10,
+            60,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(20),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.AbortPolicy()
+    );
 
-    public static void startConcurrecyServer() throws IOException {
-        // 创建一个任务长度为10的线程池，同时工作的线程数为5, 最大线程数为10
-        // 空闲时间为60s，拒绝策略为抛异常
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-                5,
-                10,
-                60,
-                TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(20),
-                Executors.defaultThreadFactory(),
-                new ThreadPoolExecutor.AbortPolicy()
-        );
-
+    public static void startConcurrencyServer() throws IOException {
         ServerSocket socket = new ServerSocket(8800);
         while (true) {
 
             Socket clientSocket = socket.accept();
-
+            System.out.println("每个客户端连接到服务器时，直接使用线程异步处理");
             threadPoolExecutor.submit(() -> {
+                InputStream inputStream = null;
                 try{
                     System.out.println("accepted connection from " + clientSocket);
-                    InputStream inputStream = clientSocket.getInputStream();
+                    inputStream = clientSocket.getInputStream();
                     byte[] bytes = new byte[1024];
                     int length;
-                    // read 方法在输入数据可用、检测到文件末尾或者抛出异常前，此方法一直阻塞
-                    // 所以无法将"Hi avengerEug"写入到socket，进而客户端收不到消息
                     while ((length = inputStream.read(bytes)) != -1) {
                         System.out.println(new String(bytes, 0, length));
                         System.out.println(length);
@@ -48,6 +48,8 @@ public class MyBIOServer {
 
                 } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    // 关闭input流代码省略
                 }
             });
         }
@@ -60,7 +62,7 @@ public class MyBIOServer {
             try{
                 System.out.println("服务器启动，等待连接, 第一次阻塞");
                 Socket clientSocket = socket.accept();
-                System.out.println("accepted connection from " + clientSocket);
+                System.out.println("客户端连接成功： " + clientSocket);
                 InputStream inputStream = clientSocket.getInputStream();
                 byte[] bytes = new byte[1024];
                 int length;
@@ -75,6 +77,8 @@ public class MyBIOServer {
 
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                // 关闭input流代码省略
             }
         }
     }
@@ -82,6 +86,6 @@ public class MyBIOServer {
 
     public static void main(String[] args) throws IOException {
         // startCommonServer();
-        startConcurrecyServer();
+        startConcurrencyServer();
     }
 }

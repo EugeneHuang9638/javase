@@ -79,25 +79,26 @@ public class MyNIOServer {
      * 如果不使用list来存储连接上服务的客户端，试想下如下情景：
      * 客户端A连接服务端，但是不发送数据。由于nio没有阻塞，所以会立刻进入第二次循环，
      * 那么此时accept拿到的客户端已经不是上一次连接的了，此时拿到的是null。
-     * 若果在这期间有第二个客户端B进行链接，那么此时拿到的客户端就是客户端B的SocketChannel
+     * 如果在这期间有第二个客户端B进行链接，那么此时拿到的客户端就是客户端B的SocketChannel
      */
     static List<SocketChannel> channels = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress("127.0.0.1", 8080));
-        // 上述说的第一个方向：设置客户端连接为非阻塞
+        // 上述说的第一个方向：设置客户端连接为非阻塞  --> 当调用ssc.accept方法时，此时不会阻塞
         ssc.configureBlocking(false);
         ByteBuffer bf = ByteBuffer.allocate(1024);
 
         while (true) {
-            SocketChannel accept = ssc.accept();
-            if (accept != null) {
-                System.out.println("连接成功：" + accept);
+            boolean facebook = false;
+            SocketChannel socketChannel = ssc.accept();
+            if (socketChannel != null) {
+                System.out.println("连接成功：" + socketChannel);
 
                 // 上述说的第二个方向：读取数据时解阻塞
-                accept.configureBlocking(false);
-                channels.add(accept);
+                socketChannel.configureBlocking(false);
+                channels.add(socketChannel);
                 System.out.println("连接数: " + channels.size());
             }
 
@@ -107,24 +108,42 @@ public class MyNIOServer {
             while (iterator.hasNext()) {
                 SocketChannel channel = iterator.next();
                 int length = 0;
+                bf.clear();
+
+                /**
+                 * channel.read(bf) ==> 这段代码的返回值有三种情况
+                 * 1、等于0         表示客户端没有发送任何数据
+                 * 2、小于0（-1）   表示客户端断开了连接
+                 * 3、大于0         表示客户端实际发送给服务的数据的大小
+                 */
                 while ((length = channel.read(bf)) > 0) {
-                    // 有数据，打印数据
-                    bf.clear();
-                    byte[] bytes = bf.array();
-                    System.out.println(new String(bytes, 0, length));
-
-
-                    /*bf.flip();
-                    byte[] bytes = new byte[length];
+                    // 切换成读模式
+                    bf.flip();
+                    // byte数组的长度取决于读取数据时 byteBuffer的limit属性(表示byteBuffer中存储数据的大小)
+                    byte[] bytes = new byte[bf.limit()];
+                    // 从缓存区读取数据到bytes数组中
                     bf.get(bytes);
                     System.out.println(new String(bytes));
-                    bf.flip();*/
+                    facebook = true;
                 }
 
-                // 小于0, 代表客户端执行了close方法
+                // 小于0, 读取不到客户端发送的信息了 --> 代表客户端执行了close方法
                 if (length < 0) {
                     iterator.remove();
+                    System.out.println("客户端退出：" + channel);
+                    System.out.println("连接数: " + channels.size());
                     continue;
+                }
+
+                if (facebook) {
+                    // 将客户端的信息读取完成，告知客户端我接收完毕
+
+                    // 清除缓冲区，将模式切换成写模式
+                    bf.clear();
+                    bf.put("我已收到你的消息, 消息内容, 请求状态：200".getBytes());
+                    bf.flip();
+                    channel.write(bf);
+                    facebook = false;
                 }
 
             }
