@@ -30,6 +30,11 @@ public class CreateDirectByteBuffer {
         //
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(10);
 
+         byteBuffer.put((byte) 97);
+         byteBuffer.flip();
+         while (byteBuffer.remaining() > 0) {
+             System.out.println(((char) byteBuffer.get()));
+         }
 
     }
 }
