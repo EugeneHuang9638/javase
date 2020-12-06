@@ -17,6 +17,8 @@ public class MyBIOClient1 {
         Scanner scanner = null;
         while (true) {
             scanner = new Scanner(System.in);
+            // 设置scanner遇到换行符才读取数据，默认是遇到空格和换行都会读取数据的
+            scanner.useDelimiter("\n");
             String next = scanner.next();
 
             if ("exit".equals(next)) {
