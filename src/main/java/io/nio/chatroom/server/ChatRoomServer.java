@@ -6,11 +6,17 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 聊天室服务器
  */
 public class ChatRoomServer {
+
+    private static final int TIME_OUT = 2000;
+
+    private static AtomicInteger integer = new AtomicInteger(1);
 
 
     public static void main(String[] args) {
@@ -49,9 +55,6 @@ public class ChatRoomServer {
             registerServerSocketChannelToSelector();
 
             while (true) {
-                // 获取连接到聊天室服务器的客户端socket, 并注册到selector中
-                registerClientSocket();
-
                 // 轮询选择select
                 pollingSelector();
 
@@ -69,14 +72,30 @@ public class ChatRoomServer {
      *
      * 大致含义是：在jdk6环境下，
      * 如果在window中，它运行得非常正常。
-     * 但是在linux中，我们虽然设置了2s轮询一次，但是再select为0的情况下，
-     * 可能会出现死循环的情况，即一直空轮训 --> 造成cpu飙升至100%.
+     * 但是在linux中，我们虽然设置了2s轮询一次，但是在select中为0的情况下，
+     * 可能会出现死循环的情况，即一直空轮训（不再是2s轮训一次了，而是死循环的轮训） --> 造成cpu飙升至100%.
      * TODO 需要研究为什么会这样，以及selector的运行原理
      *
      * @throws IOException
      */
     private static void pollingSelector() throws IOException {
-        selector.select(2000);
+        long start = System.nanoTime();
+        selector.select(TIME_OUT);
+        long end = System.nanoTime();
+        // 将2000毫秒转成纳秒TimeUnit.MILLISECONDS.toNanos(TIME_OUT)
+        if (end - start >= TimeUnit.MILLISECONDS.toNanos(TIME_OUT)) {
+            // 未发生bug，直接设置成1
+            integer.set(1);
+        } else {
+            // 发生bug了， 加1
+            integer.addAndGet(1);
+        }
+
+        // 如果bug轮训次数达到了10次，则重新构建selector
+        if (integer.get() == 10) {
+            rebuildSelector();
+        }
+
 
         /**
          * 遍历selector中的所有channel，挨个校验是否有感兴趣的事情发生
@@ -129,12 +148,32 @@ public class ChatRoomServer {
 
             // 连接事件
             if (next.isAcceptable()) {
-                System.out.println("客户端：" + next + " 上线了");
+                // 获取连接到聊天室服务器的客户端socket, 并注册到selector中
+                registerClientSocket();
             }
 
             // 移除当前的事件
             iterator.remove();
         }
+    }
+
+    /**
+     * 重新构建selector
+     */
+    private static void rebuildSelector() throws IOException {
+        Selector newSelector = Selector.open();
+        // 将旧selector中的事件及其绑定的东西转移到新selector中去
+        for (SelectionKey key : selector.keys()) {
+            int interestOps = key.interestOps();
+            key.channel().register(newSelector, interestOps);
+
+            // 将原来的selector中感兴趣的事件给取消掉，因为最终要释放旧的selector
+            key.cancel();
+        }
+        selector.close();
+
+        // 赋值新的selector
+        selector = newSelector;
     }
 
     private static void registerServerSocketChannelToSelector() {
@@ -157,16 +196,19 @@ public class ChatRoomServer {
         Iterator<SelectionKey> iterator = keys.iterator();
         while (iterator.hasNext()) {
             SelectionKey next = iterator.next();
-            SelectableChannel channel = next.channel();
-            // 过滤掉服务端，只对客户端进行群发消息
-            if (channel instanceof SocketChannel) {
-                if (channel != socketChannel) {
-                    // 如何过滤掉自己
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-                    try {
-                        ((SocketChannel) channel).write(byteBuffer);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            // 防止有其他的selectedKey执行了cancel方法，因为执行了cancel方法后，selectedKey依然不会被移除，只是被标识了
+            if (next.isValid()) {
+                SelectableChannel channel = next.channel();
+                // 过滤掉服务端，只对客户端进行群发消息
+                if (channel instanceof SocketChannel) {
+                    if (channel != socketChannel) {
+                        // 如何过滤掉自己
+                        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+                        try {
+                            ((SocketChannel) channel).write(byteBuffer);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
@@ -186,6 +228,7 @@ public class ChatRoomServer {
              */
             accept.configureBlocking(false);
             accept.register(selector, SelectionKey.OP_READ);
+            System.out.println("客户端：" + accept + " 上线了");
         }
     }
 
