@@ -49,9 +49,19 @@ public class ChannelTest {
 
         // 每次最大读取10个长度
         ByteBuffer byteBuffer = ByteBuffer.allocate(10);
-        // inChannel将文件流读取到byteBuffer缓存区中，大小为10位  --> 每一次循环从文件中读取10个字符
-        // 类似于调用了byteBuffer.put方法，往缓存区写数据
-        while (inChannel.read(byteBuffer) != -1) {
+
+        /**
+         * inChannel将文件流读取到byteBuffer缓存区中，大小为10位  --> 每一次循环从文件中读取10个字符
+         * 类似于调用了byteBuffer.put方法，往缓存区写数据、
+         *
+         * 对于read方法而言，
+         * 1、等于0         表示客户端没有发送任何数据
+         * 2、小于0（-1）   表示客户端断开了连接
+         * 3、大于0         表示客户端实际发送给服务的数据的大小
+         */
+        int length;
+        while ((length = inChannel.read(byteBuffer)) != -1) {
+            System.out.println(length);
             /**
              * 要进行写文件，我们需要从buffer中读取内容并写到文件中去，因此首先要对buffer进行读取数据.
              * 读取的数据内容是数组的那一部分内容呢？很简单，
@@ -84,5 +94,6 @@ public class ChannelTest {
              */
             byteBuffer.clear();
         }
+        System.out.println(length);
     }
 }

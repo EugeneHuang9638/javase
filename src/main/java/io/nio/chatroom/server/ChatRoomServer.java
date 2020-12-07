@@ -35,7 +35,7 @@ public class ChatRoomServer {
 
     /**
      * 开启一个聊天室服务器
-     * 占用端口：99778
+     * 占用端口：9977
      *
      */
     public static void start() {
@@ -52,50 +52,88 @@ public class ChatRoomServer {
                 // 获取连接到聊天室服务器的客户端socket, 并注册到selector中
                 registerClientSocket();
 
-                // 每隔两秒轮训一次，看注册到selector中的channel对应感兴趣的事件是否发生
-                selector.select(2000);
+                // 轮询选择select
+                pollingSelector();
 
-                /**
-                 * 遍历selector中的所有channel，挨个校验是否有感兴趣的事情发生
-                 *
-                 * TODO 需要区分selectedKeys和keys的区别
-                 */
-                Set<SelectionKey> selectionKeys = selector.selectedKeys();
-                Iterator<SelectionKey> iterator = selectionKeys.iterator();
-                while (iterator.hasNext()) {
-                    SelectionKey next = iterator.next();
-
-                    // 如果当前的selectedKey是读取事件，则读取数据
-                    if (next.isReadable()) {
-                        // 获取selector中的channel
-                        SocketChannel socketChannel = (SocketChannel) next.channel();
-
-                        // 读取消息，并进行转发
-                        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
-                        int length = 0;
-                        while ((length = socketChannel.read(byteBuffer)) > 0) {
-                            byteBuffer.flip();
-                            // 创建byte数组接收参数
-                            byte[] bytes = new byte[byteBuffer.limit() - byteBuffer.position()];
-                            byteBuffer.get(bytes);
-                            sendAllOfClient(bytes, socketChannel);
-                            byteBuffer.clear();
-                        }
-
-                        if (length < 0) {
-                            // 客户端断开连接  --> 从select中移除
-                            next.cancel();
-                            System.out.println("客户端 " + socketChannel + " 下线了");
-                        }
-                    }
-
-                    // 移除当前的事件
-                    iterator.remove();
-                }
             }
 
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 每隔两秒轮训一次，看注册到selector中的channel对应感兴趣的事件是否发生
+     * jdk在进行selector轮询时，会出现bug，bug描述可参考如下地址：
+     * https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6670302
+     *
+     * 大致含义是：在jdk6环境下，
+     * 如果在window中，它运行得非常正常。
+     * 但是在linux中，我们虽然设置了2s轮询一次，但是再select为0的情况下，
+     * 可能会出现死循环的情况，即一直空轮训 --> 造成cpu飙升至100%.
+     * TODO 需要研究为什么会这样，以及selector的运行原理
+     *
+     * @throws IOException
+     */
+    private static void pollingSelector() throws IOException {
+        selector.select(2000);
+
+        /**
+         * 遍历selector中的所有channel，挨个校验是否有感兴趣的事情发生
+         *
+         * selector.keys()和selector.selectedKeys()方法区别
+         * 它们是包含关系，前者包含了后者。
+         * 前者是返回所有注册到selector的channel对应的事件。
+         * 后者是返回所有已经发生的事件
+         *
+         * 比如：一个有两个socketChannel注册到了selector中。
+         * 一个socketChannel对connect事件感兴趣
+         * 另外一个socketChannel对read事件感兴趣
+         *
+         * 假设此时，客户端向服务端发送了数据，
+         * 此时我们执行selector的keys方法时，会返回两个SelectionKey，分别是connect相关的和read相关的。
+         * 若我们执行selectedKeys方法时，此时只会返回read相关的selectionKey
+         *
+         * 因此：我们可以得出结论：selectedKeys返回的是已经被selector感知发生的事件
+         */
+        Set<SelectionKey> selectionKeys = selector.selectedKeys();
+        Iterator<SelectionKey> iterator = selectionKeys.iterator();
+        while (iterator.hasNext()) {
+            SelectionKey next = iterator.next();
+
+            // 如果当前的selectedKey是读取事件，则读取数据
+            if (next.isReadable()) {
+                // 获取selector中的channel
+                SocketChannel socketChannel = (SocketChannel) next.channel();
+                // 读取消息，并进行转发
+                ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+                int length = 0;
+                while ((length = socketChannel.read(byteBuffer)) > 0) {
+                    System.out.println("in while ==> " + length);
+                    byteBuffer.flip();
+                    // 创建byte数组接收参数
+                    byte[] bytes = new byte[byteBuffer.limit() - byteBuffer.position()];
+                    byteBuffer.get(bytes);
+                    sendAllOfClient(bytes, socketChannel);
+                    byteBuffer.clear();
+                }
+
+                System.out.println("out while, 无数据可读了, length为0 " + length);
+
+                if (length < 0) {
+                    // 客户端断开连接  --> 从select中移除
+                    next.cancel();
+                    System.out.println("客户端： " + socketChannel + " 下线了");
+                }
+            }
+
+            // 连接事件
+            if (next.isAcceptable()) {
+                System.out.println("客户端：" + next + " 上线了");
+            }
+
+            // 移除当前的事件
+            iterator.remove();
         }
     }
 
@@ -148,7 +186,6 @@ public class ChatRoomServer {
              */
             accept.configureBlocking(false);
             accept.register(selector, SelectionKey.OP_READ);
-            System.out.println("有客户端连接了：" + accept);
         }
     }
 

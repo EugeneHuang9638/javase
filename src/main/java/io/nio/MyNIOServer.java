@@ -8,6 +8,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 使用NIO构建服务端思路：
@@ -83,7 +84,7 @@ public class MyNIOServer {
      */
     static List<SocketChannel> channels = new ArrayList<>();
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         ServerSocketChannel ssc = ServerSocketChannel.open();
         ssc.bind(new InetSocketAddress("127.0.0.1", 8080));
         // 上述说的第一个方向：设置客户端连接为非阻塞  --> 当调用ssc.accept方法时，此时不会阻塞
@@ -110,6 +111,8 @@ public class MyNIOServer {
                 int length = 0;
                 bf.clear();
 
+                TimeUnit.SECONDS.sleep(2);
+
                 /**
                  * channel.read(bf) ==> 这段代码的返回值有三种情况
                  * 1、等于0         表示客户端没有发送任何数据
@@ -117,6 +120,7 @@ public class MyNIOServer {
                  * 3、大于0         表示客户端实际发送给服务的数据的大小
                  */
                 while ((length = channel.read(bf)) > 0) {
+                    System.out.println(length);
                     // 切换成读模式
                     bf.flip();
                     // byte数组的长度取决于读取数据时 byteBuffer的limit属性(表示byteBuffer中存储数据的大小)
@@ -126,6 +130,8 @@ public class MyNIOServer {
                     System.out.println(new String(bytes));
                     facebook = true;
                 }
+
+                System.out.println(length);
 
                 // 小于0, 读取不到客户端发送的信息了 --> 代表客户端执行了close方法
                 if (length < 0) {
