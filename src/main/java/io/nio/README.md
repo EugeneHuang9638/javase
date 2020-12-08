@@ -31,14 +31,14 @@
       static List<SocketChannel> channels = new ArrayList<>();
   
       public static void main(String[] args) throws IOException {
-          ServerSocketChannel ssc = ServerSocketChannel.open();
-          ssc.bind(new InetSocketAddress("127.0.0.1", 8080));
+          ServerSocketChannel sc = ServerSocketChannel.open();
+          sc.bind(new InetSocketAddress("127.0.0.1", 8080));
           // 上述说的第一个方向：设置客户端连接为非阻塞
-          ssc.configureBlocking(false);
+          sc.configureBlocking(false);
           ByteBuffer bf = ByteBuffer.allocate(1024);
   
           while (true) {
-              SocketChannel accept = ssc.accept();
+              SocketChannel accept = sc.accept();
               if (accept != null) {
                   System.out.println("连接成功：" + accept);
   
