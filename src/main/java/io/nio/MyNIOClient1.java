@@ -35,7 +35,7 @@ public class MyNIOClient1 {
 
     public static void main(String[] args) throws IOException {
         SocketChannel socketChannel = SocketChannel.open();
-        socketChannel.connect(new InetSocketAddress("127.0.0.1", 8080));
+        socketChannel.connect(new InetSocketAddress("127.0.0.1", 7788));
         ByteBuffer bf = ByteBuffer.allocate(1024);
         Scanner scanner = null;
 
