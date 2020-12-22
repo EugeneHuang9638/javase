@@ -18,7 +18,7 @@ public class AcceptAction implements Runnable {
     /**
      * 创建selector数组
      */
-    private final Selector[] selectors = new Selector[CORS];
+    private Selector[] selectors = new Selector[CORS];
 
     private int selIdx = 0;
 
@@ -37,8 +37,12 @@ public class AcceptAction implements Runnable {
         }
     }
 
+    /**
+     * 添加锁，保证selIdx的增加不会受到影响
+     * 每个客户端连接时，轮询注册到selector中去
+     */
     @Override
-    public void run() {
+    public synchronized void run() {
         System.out.println("处理连接事件");
         try {
             SocketChannel accept = ssc.accept();
@@ -46,15 +50,19 @@ public class AcceptAction implements Runnable {
 
             // 要注册到selector中去，必须要配置非阻塞
             accept.configureBlocking(false);
+
+            /**
+             * 标记TCPSubReactor类中的selector，
+             * 表示接下来有socketChannel要注册到selector中去了，不要阻塞接下来的register方法
+             */
+            selectors[selIdx].wakeup();
+
             /**
              * 将连接到服务器的客户端的channel注册到selectors数组中的第一个，以此类推。
              * 后续处理对应selector中的事件由对应负责selector的线程负责
              */
             SelectionKey registerKey = accept.register(selectors[selIdx], SelectionKey.OP_READ);
-            registerKey.attach(new ReadAndWriteAction(accept, registerKey));
-
-            // 刷新selector的事件
-            selectors[selIdx].wakeup();
+            registerKey.attach(new LogicHandler(accept, registerKey));
 
             if (++selIdx == selectors.length) {
                 selIdx = 0;

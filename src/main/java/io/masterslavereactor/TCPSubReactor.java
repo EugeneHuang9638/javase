@@ -36,7 +36,8 @@ public class TCPSubReactor implements Runnable {
             Iterator<SelectionKey> iterator = selectionKeys.iterator();
             while (iterator.hasNext()) {
                 SelectionKey selectionKey = iterator.next();
-                dispatch(selectionKey);
+                System.out.println(Thread.currentThread().getName() + " 读事件：" + selectionKey);
+                dispatch(selectionKey.attachment());
                 iterator.remove();
             }
 
@@ -47,8 +48,8 @@ public class TCPSubReactor implements Runnable {
      * 这里分发，最终会执行到 主线程处理连接事件时指定的attach
      *
      */
-    private void dispatch(SelectionKey selectionKey) {
-        Runnable attachment = (Runnable) selectionKey.attachment();
+    private void dispatch(Object object) {
+        Runnable attachment = (Runnable) object;
         attachment.run();
     }
 }

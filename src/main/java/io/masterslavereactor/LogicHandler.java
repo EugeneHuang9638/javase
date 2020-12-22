@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class ReadAndWriteAction implements Runnable {
+public class LogicHandler implements Runnable {
 
     private static final String SPECIAL_COMMAND = "avengerEug";
 
@@ -28,55 +28,44 @@ public class ReadAndWriteAction implements Runnable {
     // 当前处理read事件的channel绑定的key
     private SelectionKey registerKey;
 
-    public ReadAndWriteAction(SocketChannel sc, SelectionKey registerKey) {
+    public LogicHandler(SocketChannel sc, SelectionKey registerKey) {
         this.sc = sc;
         this.registerKey = registerKey;
     }
 
     @Override
     public void run() {
-        if (registerKey.interestOps() == SelectionKey.OP_READ) {
-            threadPoolExecutor.execute(() -> {
-                try {
-                    readData();
-                } catch (IOException e) {
-                    // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
-                    try {
-                        closeClientConnection();
-                    } catch (IOException e1) {
-                    }
-                }
-            });
-        } else {
-            threadPoolExecutor.execute(() -> {
-                try {
-                    writeData();
-                } catch (IOException e) {
-                    // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
-                    try {
-                        closeClientConnection();
-                    } catch (IOException e1) {
-                    }
-                }
-            });
-        }
+        // 这里只留下下一行代码时，会进行死循环
+        System.out.println("111111111111111111111");
+
+//        if (registerKey.interestOps() == SelectionKey.OP_READ) {
+//            threadPoolExecutor.execute(() -> {
+//                try {
+//                    readData();
+//                    writeData();
+//                } catch (IOException e) {
+//                    // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
+//                    try {
+//                        closeClientConnection();
+//                    } catch (IOException e1) {
+//                    }
+//                }
+//            });
+//        }
     }
 
     private void writeData() throws IOException {
         String content = "我收到你的消息了";
-        System.out.println("开始向客户端发送数据, 内容：" + content);
+        System.out.println(Thread.currentThread().getName() + "开始向客户端发送数据, 内容：" + content);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
         byteBuffer.put(content.getBytes());
         byteBuffer.flip();
         sc.write(byteBuffer);
-
-        registerKey.interestOps(SelectionKey.OP_READ);
-        registerKey.selector().wakeup();
     }
 
     private void readData() throws IOException {
 
-        System.out.println("开始读取客户端发送给服务端的数据");
+        System.out.println(Thread.currentThread().getName() + " 开始读取客户端发送给服务端的数据");
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(8);
         StringBuffer stringBuffer = new StringBuffer();
         int length;
@@ -98,14 +87,6 @@ public class ReadAndWriteAction implements Runnable {
             } else {
                 System.out.println("接收到客户端发送的消息：" + stringBuffer.toString());
             }
-
-            /**
-             * 将当前selectedKey切换成对写事件感兴趣。切换完感兴趣的事件后，立马调用wakeup方法，将阻塞住的select方法解除阻塞。
-             * 为的就是触发给客户端写数据
-             */
-            registerKey.interestOps(SelectionKey.OP_WRITE);
-            registerKey.selector().wakeup();
-
         }
     }
 
