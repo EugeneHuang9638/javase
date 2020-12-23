@@ -2,7 +2,6 @@ package io.masterslavereactor;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -16,11 +15,11 @@ public class AcceptAction implements Runnable {
     private final int CORS = Runtime.getRuntime().availableProcessors();
 
     /**
-     * 创建selector数组
+     * 创建从线程数组
      */
-    private Selector[] selectors = new Selector[CORS];
+    private SlaveReactor[] slaveReactors = new SlaveReactor[CORS];
 
-    private int selIdx = 0;
+    private volatile int selIdx = 0;
 
     public AcceptAction(ServerSocketChannel ssc) throws IOException {
         this.ssc = ssc;
@@ -32,8 +31,8 @@ public class AcceptAction implements Runnable {
          * 在初始化的过程中，内部打开了selector
          */
         for (int i = 0; i < CORS; i++) {
-            selectors[i] = Selector.open();
-            new Thread(new TCPSubReactor(selectors[i], ssc ,i)).start();
+            slaveReactors[i] = new SlaveReactor(i);
+            new Thread(slaveReactors[i]).start();
         }
     }
 
@@ -48,26 +47,15 @@ public class AcceptAction implements Runnable {
             SocketChannel accept = ssc.accept();
             System.out.println("客户端：" + accept.getRemoteAddress() + " 上线了");
 
-            // 要注册到selector中去，必须要配置非阻塞
-            accept.configureBlocking(false);
-
-            /**
-             * 标记TCPSubReactor类中的selector，
-             * 表示接下来有socketChannel要注册到selector中去了，不要阻塞接下来的register方法
-             */
-            selectors[selIdx].wakeup();
-
             /**
              * 将连接到服务器的客户端的channel注册到selectors数组中的第一个，以此类推。
              * 后续处理对应selector中的事件由对应负责selector的线程负责
              */
-            SelectionKey registerKey = accept.register(selectors[selIdx], SelectionKey.OP_READ);
-            registerKey.attach(new LogicHandler(accept, registerKey));
+            slaveReactors[selIdx].register(accept, SelectionKey.OP_READ);
 
-            if (++selIdx == selectors.length) {
+            if (++selIdx == CORS) {
                 selIdx = 0;
             }
-
 
         } catch (IOException e) {
             e.printStackTrace();

@@ -35,13 +35,23 @@ public class LogicHandler implements Runnable {
 
     @Override
     public void run() {
-        // 这里只留下下一行代码时，会进行死循环
-        System.out.println("111111111111111111111");
+        System.out.println("执行logicHandler");
 
 //        if (registerKey.interestOps() == SelectionKey.OP_READ) {
 //            threadPoolExecutor.execute(() -> {
 //                try {
 //                    readData();
+//                } catch (IOException e) {
+//                    // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
+//                    try {
+//                        closeClientConnection();
+//                    } catch (IOException e1) {
+//                    }
+//                }
+//            });
+//        } else if (registerKey.interestOps() == SelectionKey.OP_WRITE) {
+//            threadPoolExecutor.execute(() -> {
+//                try {
 //                    writeData();
 //                } catch (IOException e) {
 //                    // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
@@ -51,6 +61,8 @@ public class LogicHandler implements Runnable {
 //                    }
 //                }
 //            });
+//        } else {
+//            System.out.println("register key 绑定的事件未知");
 //        }
     }
 
@@ -61,6 +73,8 @@ public class LogicHandler implements Runnable {
         byteBuffer.put(content.getBytes());
         byteBuffer.flip();
         sc.write(byteBuffer);
+        registerKey.interestOps(SelectionKey.OP_READ);
+        registerKey.selector().wakeup();
     }
 
     private void readData() throws IOException {
@@ -86,6 +100,8 @@ public class LogicHandler implements Runnable {
                 execLogic();
             } else {
                 System.out.println("接收到客户端发送的消息：" + stringBuffer.toString());
+                registerKey.interestOps(SelectionKey.OP_WRITE);
+                registerKey.selector().wakeup();
             }
         }
     }

@@ -1,24 +1,23 @@
 package io.masterslavereactor;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
 import java.util.Set;
 
-public class TCPSubReactor implements Runnable {
+/**
+ * 处理读事件，当有读事件发生时，将业务逻辑的处理分发到logicHandler中执行
+ */
+public class SlaveReactor implements Runnable {
 
     private Selector selector;
 
-    private ServerSocketChannel ssc;
-
     private int num;
 
-    public TCPSubReactor(Selector selector, ServerSocketChannel ssc, int num) {
-        this.selector = selector;
-        this.ssc = ssc;
+    public SlaveReactor(int num) throws IOException {
+        this.selector = Selector.open();
         this.num = num;
+        System.out.println(selector);
     }
 
     @Override
@@ -31,6 +30,7 @@ public class TCPSubReactor implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            System.out.println("第 " + num + " 个selector得到执行。。");
 
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
             Iterator<SelectionKey> iterator = selectionKeys.iterator();
@@ -51,5 +51,17 @@ public class TCPSubReactor implements Runnable {
     private void dispatch(Object object) {
         Runnable attachment = (Runnable) object;
         attachment.run();
+    }
+
+    public SelectionKey register(SocketChannel accept, int ops) throws IOException {
+        // 要注册到selector中去，必须要配置非阻塞
+        accept.configureBlocking(false);
+
+        selector.wakeup();
+        SelectionKey selectionKey = accept.register(selector, ops);
+        selectionKey.attach(new LogicHandler(accept, selectionKey));
+        System.out.println(selector.selectedKeys());
+
+        return selectionKey;
     }
 }
