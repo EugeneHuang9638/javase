@@ -21,6 +21,25 @@ public class MainReactor implements Runnable {
 
     private Selector selector;
 
+    public MainReactor(String host, int port) {
+        try {
+            ssc = ServerSocketChannel.open();
+            ssc.bind(new InetSocketAddress(host, port));
+
+            selector = Selector.open();
+
+            ssc.configureBlocking(false);
+
+            /**
+             * 此时只是将服务端的socketChannel传到了selectionKey上
+             */
+            SelectionKey selectionKey = ssc.register(selector, SelectionKey.OP_ACCEPT);
+            selectionKey.attach(new AcceptAction(selectionKey));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
         while (!Thread.interrupted()) {
@@ -42,34 +61,15 @@ public class MainReactor implements Runnable {
                 Iterator<SelectionKey> iterator = selectionKeys.iterator();
                 while (iterator.hasNext()) {
                     SelectionKey selectionKey = iterator.next();
+                    dispatch(selectionKey.attachment());
                     iterator.remove();
                     // 遍历已经发生的事件，进行转发
-                    dispatch(selectionKey.attachment());
                 }
                 System.out.println("连接事件处理完毕，等待下一个连接");
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    public MainReactor(String host, int port) {
-        try {
-            ssc = ServerSocketChannel.open();
-            ssc.bind(new InetSocketAddress(host, port));
-
-            selector = Selector.open();
-
-            ssc.configureBlocking(false);
-
-            /**
-             * 此时只是将服务端的socketChannel传到了selectionKey上
-             */
-            SelectionKey selectionKey = ssc.register(selector, SelectionKey.OP_ACCEPT);
-            selectionKey.attach(new AcceptAction(ssc));
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

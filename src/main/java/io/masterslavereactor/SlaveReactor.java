@@ -20,10 +20,22 @@ public class SlaveReactor implements Runnable {
         System.out.println(selector);
     }
 
+    public SelectionKey register(SocketChannel accept) throws IOException {
+        // 要注册到selector中去，必须要配置非阻塞
+        accept.configureBlocking(false);
+
+        selector.wakeup();
+        SelectionKey selectionKey = accept.register(selector, SelectionKey.OP_READ);
+        selectionKey.attach(new LogicHandler(accept, selectionKey));
+
+        return selectionKey;
+    }
+
     @Override
     public void run() {
         while (!Thread.interrupted()) {
             try {
+                // 当有读事件发生时，这里为什么不阻塞了？
                 if (selector.select() == 0) {
                     continue;
                 }
@@ -53,15 +65,4 @@ public class SlaveReactor implements Runnable {
         attachment.run();
     }
 
-    public SelectionKey register(SocketChannel accept, int ops) throws IOException {
-        // 要注册到selector中去，必须要配置非阻塞
-        accept.configureBlocking(false);
-
-        selector.wakeup();
-        SelectionKey selectionKey = accept.register(selector, ops);
-        selectionKey.attach(new LogicHandler(accept, selectionKey));
-        System.out.println(selector.selectedKeys());
-
-        return selectionKey;
-    }
 }
