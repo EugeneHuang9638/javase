@@ -9,6 +9,9 @@ public class AcceptAction implements Runnable {
 
     private final Object LOCK = new Object();
 
+    /**
+     * 此selectionKey为mainReactor注册到selector中的读事件
+     */
     private SelectionKey selectionKey;
 
     /**
@@ -33,6 +36,7 @@ public class AcceptAction implements Runnable {
          * 在初始化的过程中，内部打开了selector
          */
         for (int i = 0; i < CORS; i++) {
+            // 每个slaveReactor的子线程一直在执行，等待着channel注册上去并轮训感兴趣的事件
             slaveReactors[i] = new SlaveReactor(i);
             new Thread(slaveReactors[i]).start();
         }

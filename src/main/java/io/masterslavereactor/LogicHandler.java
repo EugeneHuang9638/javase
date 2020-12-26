@@ -35,9 +35,8 @@ public class LogicHandler implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("执行logicHandler");
-
-//        if (registerKey.interestOps() == SelectionKey.OP_READ) {
+        System.out.println("读事件发生了");
+//        if (registerKey.isReadable()) {
 //            threadPoolExecutor.execute(() -> {
 //                try {
 //                    readData();
@@ -49,7 +48,7 @@ public class LogicHandler implements Runnable {
 //                    }
 //                }
 //            });
-//        } else if (registerKey.interestOps() == SelectionKey.OP_WRITE) {
+//        } else if (registerKey.isWritable()) {
 //            threadPoolExecutor.execute(() -> {
 //                try {
 //                    writeData();
@@ -73,11 +72,11 @@ public class LogicHandler implements Runnable {
         byteBuffer.put(content.getBytes());
         byteBuffer.flip();
         sc.write(byteBuffer);
-        registerKey.interestOps(SelectionKey.OP_READ);
-        registerKey.selector().wakeup();
+//        registerKey.interestOps(SelectionKey.OP_READ);
+//        registerKey.selector().wakeup();
     }
 
-    private void readData() throws IOException {
+    private String readData() throws IOException {
 
         System.out.println(Thread.currentThread().getName() + " 开始读取客户端发送给服务端的数据");
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(8);
@@ -93,17 +92,19 @@ public class LogicHandler implements Runnable {
 
         if (length == -1) {
             closeClientConnection();
-            return;
+            return null;
         } else {
             if (SPECIAL_COMMAND.equals(stringBuffer.toString())) {
                 // 如果命令匹配，则执行对应的特殊操作
                 execLogic();
             } else {
                 System.out.println("接收到客户端发送的消息：" + stringBuffer.toString());
-                registerKey.interestOps(SelectionKey.OP_WRITE);
-                registerKey.selector().wakeup();
+//                registerKey.interestOps(SelectionKey.OP_WRITE);
+//                registerKey.selector().wakeup();
             }
         }
+
+        return stringBuffer.toString();
     }
 
     private void closeClientConnection() throws IOException {
