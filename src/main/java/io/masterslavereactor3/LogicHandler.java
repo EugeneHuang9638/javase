@@ -1,45 +1,30 @@
-package io.masterslavereactor;
+package io.masterslavereactor3;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
+/**
+ * 客户端向服务端发送数据时，会执行到此handler
+ *
+ * 此handler是一个slaveReactor对应一个handler
+ */
 public class LogicHandler {
 
     private static final String SPECIAL_COMMAND = "avengerEug";
 
-    private ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-            5,
-            10,
-            10,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(30),
-            Executors.defaultThreadFactory(),
-            (r, executor) -> System.out.println("自定义拒绝策略")
-    );
 
-    public LogicHandler() {
-    }
-
-    public void run(SelectionKey registerKey) {
-        System.out.println("读事件发生了");
-        if (registerKey.isReadable()) {
+    public void handler(SelectionKey registerKey) {
+        try {
+            readData(registerKey);
+            writeData(registerKey);
+        } catch (IOException e) {
+            // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
             try {
-                readData(registerKey);
-            } catch (IOException e) {
-                // 客户端强制关闭连接了，此处catch住异常，由服务器断开与客户端的连接
-                try {
-                    closeClientConnection(registerKey);
-                } catch (IOException e1) {
-                }
+                closeClientConnection(registerKey);
+            } catch (IOException e1) {
             }
-        } else {
-            System.out.println("register key 绑定的事件未知");
         }
     }
 
@@ -51,13 +36,15 @@ public class LogicHandler {
         byteBuffer.put(content.getBytes());
         byteBuffer.flip();
         sc.write(byteBuffer);
+
 //        registerKey.interestOps(SelectionKey.OP_READ);
 //        registerKey.selector().wakeup();
     }
 
     private String readData(SelectionKey registerKey) throws IOException {
-        System.out.println(Thread.currentThread().getName() + " 开始读取客户端发送给服务端的数据");
         SocketChannel sc = (SocketChannel) registerKey.channel();
+
+        System.out.println(Thread.currentThread().getName() + " 开始读取客户端发送给服务端的数据");
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(8);
         StringBuffer stringBuffer = new StringBuffer();
         int length;
@@ -73,23 +60,14 @@ public class LogicHandler {
             closeClientConnection(registerKey);
             return null;
         } else {
-            threadPoolExecutor.execute(() -> {
-                System.out.println("接收到数据，执行业务逻辑");
-                if (SPECIAL_COMMAND.equals(stringBuffer.toString())) {
-                    // 如果命令匹配，则执行对应的特殊操作
-                    execLogic();
-                } else {
-                    System.out.println("接收到客户端发送的消息：" + stringBuffer.toString());
+            if (SPECIAL_COMMAND.equals(stringBuffer.toString())) {
+                // 如果命令匹配，则执行对应的特殊操作
+                execLogic();
+            } else {
+                System.out.println("接收到客户端发送的消息：" + stringBuffer.toString());
 //                registerKey.interestOps(SelectionKey.OP_WRITE);
 //                registerKey.selector().wakeup();
-                }
-                try {
-                    writeData(registerKey);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
-
+            }
         }
 
         return stringBuffer.toString();
@@ -105,4 +83,5 @@ public class LogicHandler {
     private void execLogic() {
         System.out.println("客户端发送了avengerEug指令，我要输出一段sql：SELECT * FROM user");
     }
+
 }

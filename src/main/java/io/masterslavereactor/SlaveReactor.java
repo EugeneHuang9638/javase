@@ -57,7 +57,7 @@ public class SlaveReactor implements Runnable {
 
         selector.wakeup();
         SelectionKey selectionKey = accept.register(selector, SelectionKey.OP_READ);
-        selectionKey.attach(new LogicHandler(accept, selectionKey));
+        selectionKey.attach(new LogicHandler());
         System.out.println("第" + num + "个slaveReactor有客户端连接上了，注册的selectionKey为：" + selectionKey);
 
         return selectionKey;
@@ -69,7 +69,7 @@ public class SlaveReactor implements Runnable {
      */
     private void dispatch(SelectionKey selectionKey) {
         LogicHandler logicHandler = (LogicHandler) selectionKey.attachment();
-        logicHandler.run();
+        logicHandler.run(selectionKey);
     }
 
     /**

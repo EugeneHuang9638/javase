@@ -5,14 +5,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class AcceptAction implements Runnable {
+public class AcceptAction {
 
     private final Object LOCK = new Object();
-
-    /**
-     * 此selectionKey为mainReactor注册到selector中的读事件
-     */
-    private SelectionKey selectionKey;
 
     /**
      * 获取cpu核心数
@@ -27,8 +22,6 @@ public class AcceptAction implements Runnable {
     private volatile int selIdx = 0;
 
     public AcceptAction(SelectionKey selectionKey) throws IOException {
-        this.selectionKey = selectionKey;
-
         /**
          * 当服务器启动后，会启动多个线程（根据cpu核心数决定）
          * 同时每个线程执行的业务逻辑为TCPSubReactor类的run方法
@@ -46,8 +39,7 @@ public class AcceptAction implements Runnable {
      * 添加锁，保证selIdx的增加不会受到影响
      * 每个客户端连接时，轮询注册到selector中去
      */
-    @Override
-    public void run() {
+    public void run(SelectionKey selectionKey) {
 
         synchronized (LOCK) {
             System.out.println("处理连接事件");
