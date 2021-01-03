@@ -10,8 +10,15 @@ import io.netty.handler.NettyServerHandler;
 public class NettyServer {
 
     public static void main(String[] args) {
-        // 创建两个线程组bossGroup和workerGroup，含有的子线程NioEventLoop的个数默认为cpu核心数的两倍
-        // bossGroup 只是处理连接请求，真正的处理客户端业务会交给workerGroup完成
+
+        /**
+         * 创建两个线程组bossGroup和workerGroup，含有的子线程NioEventLoop的个数默认为cpu核心数的两倍
+         * bossGroup 只是处理连接请求，真正的处理客户端业务会交给workerGroup完成
+         *
+         * bossGroup对比于主从reactor模型下的mainReactor
+         * workerGroup对比于主从reactor模型下的subReactor模型
+         *
+         */
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
