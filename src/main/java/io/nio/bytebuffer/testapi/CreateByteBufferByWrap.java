@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 /**
  * 传入一个byte数组来构建缓存区
  *
- * 当byte数组内容变化的话，缓存区的数据也会跟着变
+ *
  */
 public class CreateByteBufferByWrap {
 

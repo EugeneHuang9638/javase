@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
  * 创建directByteBuffer ==> 堆外内存，位于操作系统中。省去了
  * 从jvm 拷贝数据到 操作系统的步骤
  *
- * DirectByteBuffer（由ByteBuffer.allocate() api创建）与HeapByteBuffer（由ByteBuffer.allocate() api创建）最大的区别就是：
+ * DirectByteBuffer（由ByteBuffer.allocateDirect() api创建）与HeapByteBuffer（由ByteBuffer.allocate() api创建）最大的区别就是：
  * directByteBuffer存储数据的byte数组是存在操作系统中的，
  * 而heapByteBuffer存储数据的byte数组存在jvm的堆中。
  * 当我们要进行网络传输数据时，最终肯定要调用操作系统的函数，
