@@ -3,5 +3,5 @@
 
 
 ## 注意
-* 关于byteBuffer相关的api，请参照“相同目录级别的chatroom目录下的README.md文件”
+* 关于byteBuffer相关的api，请参照“相同目录级别的testapi包下的测试文件”
 
