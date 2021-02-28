@@ -46,6 +46,7 @@
 
 ## 五、总结
 
+* **NIO与BIO相比，它的非阻塞体现在读数据的操作：在BIO中，客户端连接服务器后，如果客户端一直没有向服务器发送数据，服务器则会一直阻塞在read方法。而在NIO中，我们已经将channel交给selector去管理了，selector中的channel和channel之间是完全解耦的，channelA事件处理并不会因为channelB没有发生事件而阻塞，NIO面向的是selector中的每个channel，每个channel是相互独立的，不会互相影响。**
 * **学习要动起来，建议看到这篇文章的读者能按照客户端和服务端的代码敲一遍，然后再对照执行流程图慢慢理解**
 * **如果你觉得我的文章有用的话，欢迎点赞、收藏和关注。:laughing:**
 * **I'm a slow walker, but I never walk backwards**
