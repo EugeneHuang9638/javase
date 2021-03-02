@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
-public class SingleSelectorClient {
+public class SingleReactorClient {
 
     public static void main(String[] args) throws IOException {
         SocketChannel socketChannel = SocketChannel.open();
