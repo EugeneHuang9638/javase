@@ -45,7 +45,6 @@ public class NioClient {
              * 只要注册到selector中的channel有事件发生，则会解除阻塞，如果这个事件是channel感兴趣的事件，则会进入set集合中
              */
             int select = selector.select();
-            System.out.println(select);
 
             /**
              * 执行到这里，那肯定是上述的select方法解除阻塞了 ===> 这代表着有感兴趣的事件发生了，接下来需要处理感兴趣的事件了
