@@ -71,7 +71,7 @@ public class MainReactor implements Runnable {
     }
 
     private void dispatch(Object attachment) {
-        Runnable runnable = (Runnable) attachment;
+        AcceptAction runnable = (AcceptAction) attachment;
         runnable.run();
     }
 }

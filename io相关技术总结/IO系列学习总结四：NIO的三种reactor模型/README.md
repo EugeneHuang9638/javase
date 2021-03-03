@@ -32,3 +32,11 @@
 * 从图中可以看出，专业的人做专业的事。**这种架构非常的经典，连redis的IO模型用的也是它**。有人可能会抬杠：专门处理客户端的selector也会出现负载量大，无法处理的情况下。这个问题就像你的应用程序在代码层面上能优化的点都优化完了，现在还是扛不住，那怎么办？很简单：横向扩容，把负载的请求分散到多台机器处理。虽然在上述的单线程模型、多线程模型中也能使用扩容的方式解决负载量大的问题，但在这两种模型下来使用金钱（扩容需要服务器 ===> 需要大量的钱~）来达到减轻负载的目的的话，如果你任性，钱多，那当我没说！
 
 * [对应的主从线程模型代码地址，点击跳转访问](https://github.com/AvengerEug/javase/blob/develop/src/main/java/io/nio/masterslavereactor/MasterSlaveReactorServer.java)
+* 注意点：**selector的select方法和register方法在底层会使用同一把锁，容易造成register方法因select方法的阻塞而阻塞。要解决这个问题就要在执行register方法时，将select的方法解除阻塞，而调用wakeUp方法可以解决阻塞。因此，在register方法前需要调用一次wakeUp方法，避免阻塞。**
+
+## 五、总结
+
+* **至此，我们了解了reactor的三种线程模型。在编写NIO的代码时，你会觉得很吃力。为什么？因为要考虑各种异常情况：客户端异常退出、服务端异常退出等等。而业界却有那么一款框架，它集成了reactor性能最高的主从线程模型，并且使用它能轻松的开发一个网络应用程序，它就是Netty！下篇文章将正式进军Netty大门。**
+* **如果你觉得我的文章有用的话，欢迎点赞、收藏和关注。:laughing:**
+* **I'm a slow walker, but I never walk backwards**
+

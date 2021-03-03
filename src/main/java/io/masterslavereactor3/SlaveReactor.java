@@ -11,15 +11,15 @@ public class SlaveReactor extends Thread {
 
     public SlaveReactor() throws IOException {
         this.selector = Selector.open();
-        System.out.println(this.selector);
+        System.out.println(Thread.currentThread().getName() + "线程的selector: " + this.selector);
     }
 
     @Override
     public void run() {
         while (!Thread.interrupted()) {
             try {
+                System.out.println(Thread.currentThread().getName() + "线程的selector: " + selector + " 正在等待客户端发送请求");
                 selector.select();
-                System.out.println(Thread.currentThread().getName() + "：slaveReactor解除阻塞了");
 
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
                 while (iterator.hasNext()) {
@@ -42,6 +42,7 @@ public class SlaveReactor extends Thread {
     public void register(SocketChannel socketChannel) throws IOException {
         socketChannel.configureBlocking(false);
 
+        System.out.println(Thread.currentThread().getName() + "线程准备唤醒 selector: " + selector);
         selector.wakeup();
         SelectionKey register = socketChannel.register(selector, SelectionKey.OP_READ);
         register.attach(new LogicHandler());

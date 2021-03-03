@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class LogicHandler implements Runnable {
+public class LogicHandler  {
 
     private static final String SPECIAL_COMMAND = "avengerEug";
 
@@ -33,7 +33,6 @@ public class LogicHandler implements Runnable {
         this.registerKey = registerKey;
     }
 
-    @Override
     public void run() {
         // 死循环执行
         System.out.println("111111111111111111111");

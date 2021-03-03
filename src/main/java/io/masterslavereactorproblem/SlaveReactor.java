@@ -17,6 +17,7 @@ public class SlaveReactor implements Runnable {
     public void run() {
         while (!Thread.interrupted()) {
             try {
+                System.out.println(Thread.currentThread().getName() + "slaveReactor等待处理业务逻辑，selector：" + selector);
                 if (selector.select() == 0) {
                     continue;
                 }
@@ -41,14 +42,14 @@ public class SlaveReactor implements Runnable {
      *
      */
     private void dispatch(Object object) {
-        Runnable attachment = (Runnable) object;
-        attachment.run();
+        LogicHandler logicHandler = (LogicHandler) object;
+        logicHandler.run();
     }
 
     public SelectionKey register(SocketChannel accept, int ops) throws IOException {
         // 要注册到selector中去，必须要配置非阻塞
         accept.configureBlocking(false);
-
+        System.out.println(Thread.currentThread().getName() + "线程唤醒selector：" + selector);
         selector.wakeup();
         SelectionKey selectionKey = accept.register(selector, ops);
         selectionKey.attach(new LogicHandler(accept, selectionKey));

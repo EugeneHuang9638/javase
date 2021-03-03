@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 public class MasterSlaveReactorServer {
 
+    private static Object LOCK = new Object();
+
     private static final ThreadPoolExecutor THREAD_POOL_EXECUTOR = new ThreadPoolExecutor(
             5,
             10,
@@ -60,10 +62,11 @@ public class MasterSlaveReactorServer {
                             /**
                              * ===========
                              * 注册到slaveSelector中
-                             * TODO --> 这里阻塞了  这里和83行的select死锁了。
+                             * TODO --> 这里阻塞了  这里和84行的select死锁了。
                              * {@link https://www.iteye.com/blog/xiaoz5919-1518473}
                              * ===========
                              */
+                            slaveSelector.wakeup();
                             clientSocketChannel.register(slaveSelector, SelectionKey.OP_READ);
                         }
 
@@ -81,8 +84,8 @@ public class MasterSlaveReactorServer {
                     // 此方法是阻塞的，当selector有事件发生时，才会解除阻塞
                     slaveSelector.select();
 
-                    // 获取注册在selector中的channel的感兴趣事件  --> 只有是感兴趣的事件才会被放到set中
-                    Set<SelectionKey> selectionKeys = masterSelector.selectedKeys();
+                    // 获取注册在slaveSelector中的channel的感兴趣事件  --> 只有是感兴趣的事件才会被放到set中
+                    Set<SelectionKey> selectionKeys = slaveSelector.selectedKeys();
                     Iterator<SelectionKey> iterator = selectionKeys.iterator();
                     while (iterator.hasNext()) {
                         SelectionKey selectionKey = iterator.next();
@@ -99,12 +102,15 @@ public class MasterSlaveReactorServer {
 
                             THREAD_POOL_EXECUTOR.submit(() -> {
                                 System.out.println(Thread.currentThread().getName() + " 异步处理客户端发来的数据：" + sb);
+                                // 往客户端回写数据
+                                ByteBuffer writeBuffer = ByteBuffer.wrap("hello client！".getBytes());
+                                try {
+                                    clientSocketChannel.write(writeBuffer);
+                                    selectionKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             });
-
-                            // 往客户端回写数据
-                            ByteBuffer writeBuffer = ByteBuffer.wrap("hello client！".getBytes());
-                            clientSocketChannel.write(writeBuffer);
-                            selectionKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
                         } else if (selectionKey.isWritable()) {
                             System.out.println("处理服务端的写事件，无数据可写时，将感兴趣的写事件去除");

@@ -5,7 +5,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class AcceptAction implements Runnable {
+public class AcceptAction {
 
     private ServerSocketChannel ssc;
 
@@ -40,7 +40,6 @@ public class AcceptAction implements Runnable {
      * 添加锁，保证selIdx的增加不会受到影响
      * 每个客户端连接时，轮询注册到selector中去
      */
-    @Override
     public synchronized void run() {
         System.out.println("处理连接事件");
         try {

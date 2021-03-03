@@ -65,6 +65,12 @@ public class MulReactorServer {
                         sb.append(new String(byteBuffer.array(), 0, (byteBuffer.limit() - byteBuffer.position())));
                     }
 
+                    /**
+                     * =============
+                     * 异步处理业务逻辑，切忽将上面的decode和下面的encode步骤异步处理，
+                     * 否则会出现奇奇怪怪的并发问题
+                     * =============
+                     */
                     THREAD_POOL_EXECUTOR.submit(() -> {
                         System.out.println(Thread.currentThread().getName() + " 异步处理客户端发来的数据：" + sb);
                     });
