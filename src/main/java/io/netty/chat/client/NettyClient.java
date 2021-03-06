@@ -1,14 +1,14 @@
-package io.netty.client;
+package io.netty.chat.client;
 
+import io.netty.base.handler.NettyClientHandler;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.NettyClientHandler;
+import io.netty.chat.handler.ChatClientHandler;
 
 public class NettyClient {
 
@@ -21,7 +21,7 @@ public class NettyClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new NettyClientHandler());
+                            ch.pipeline().addLast(new ChatClientHandler());
                         }
                     });
 

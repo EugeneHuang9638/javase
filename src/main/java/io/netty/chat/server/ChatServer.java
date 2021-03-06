@@ -1,13 +1,13 @@
-package io.netty.server;
+package io.netty.chat.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.NettyServerHandler;
+import io.netty.chat.handler.ChatServerHandler;
 
-public class NettyServer {
+public class ChatServer {
 
     public static void main(String[] args) {
 
@@ -36,7 +36,7 @@ public class NettyServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             // 对workerGroup的socketChannel设置处理器
-                            ch.pipeline().addLast(new NettyServerHandler());
+                            ch.pipeline().addLast(new ChatServerHandler());
                         }
                     });
             System.out.println("开始启动服务器");

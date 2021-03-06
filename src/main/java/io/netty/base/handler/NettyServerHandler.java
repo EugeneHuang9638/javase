@@ -1,4 +1,4 @@
-package io.netty.handler;
+package io.netty.base.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
