@@ -6,8 +6,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.base.handler.NettyClientHandler;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 public class NettyClient {
 
@@ -16,7 +16,7 @@ public class NettyClient {
         try {
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(clientEventLoopGroup)
-                    .channel(NioServerSocketChannel.class)
+                    .channel(NioSocketChannel.class)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
