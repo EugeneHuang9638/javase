@@ -1,11 +1,11 @@
-package io.netty.chat.client;
+package io.netty.funcdemo.chat.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.chat.handler.ChatClientHandler;
+import io.netty.funcdemo.chat.handler.ChatClientHandler;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
