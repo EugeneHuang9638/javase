@@ -19,23 +19,23 @@ public class TimeServer {
     }
 
     public void run() throws Exception {
-        EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
-            ServerBootstrap b = new ServerBootstrap();// (2)
+            ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)// (3)
+                    .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {// (4)
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new TimeServerHandler());
                         }
                     })
-                    .option(ChannelOption.SO_BACKLOG, 128)// (5)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);// (6)
+                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             // 绑定并开始接收连接请求
-            ChannelFuture f = b.bind(port).sync();// (7)
+            ChannelFuture f = b.bind(port).sync();
 
             // 等待，直到server socket被关闭. 在discard协议中，这种情况不会被发生。但是我们应该
             f.channel().closeFuture().sync();
