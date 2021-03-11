@@ -82,11 +82,9 @@
 
   time protocol协议的基本代码如上所示，总共分为：**服务端 & 服务端handler + 客户端 & 客户端handler**。其主要的一些点都在注释中有描述，可以仔细阅读。就这么一个简单的程序可能会存在数据包**碎片化**的问题（**这个问题需要牢牢记住，它应该就是Netty所谓的粘包拆包了**）
 
+* 基础功能版本对应的代码地址：[https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version1](https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version1)
+
 ### 2.2 netty数据包的碎片化情况
-
-* 
-
-### 2.2 修复碎片化功能版本（解决方案一：特殊的协议使用特殊的方式）
 
 * 先说说为什么会出现**碎片化**的情况，这里引用下官网的解释：
 
@@ -100,7 +98,55 @@
 
   ![data_2.png](data_2.png)
 
-  
+  因此，我们需要解决这个问题。
 
-  
+#### 2.2.1 修复碎片化功能版本（解决方案一：使用缓存buffer）
+
+* 在time protocol的demo中，我们知道，服务端发送给客户端的是一位int类型的数字，而int类型占用了4个字节，因此，我们只需要创建一个**缓存的buffer**，其大小为4个字节，当服务端接收到消息时，就往这个缓存的buffer中塞数据，**塞完后需要校验缓存的buffer是否已经满了**（**`因为我们知道，服务器发来的数据时4个字节为一组，就算出现了碎片化的情况，我只要保证缓存的buffer满了，那就肯定是一个完成的数据`**）。
+
+* 针对此种解决方案，我们只需要改造TimeClientHandler为如下模样即可：
+
+  ![TimeClientHandlerWithSolutionOne.png](TimeClientHandlerWithSolutionOne.png)
+
+  每个重要部分的代码（**后面有编号**），可以详细看下注释。
+
+* 解决方案一版本对应的代码地址：[https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version2](https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version2)
+
+#### 2.2.2 修复碎片化功能版本（解决方案二：使用编码器）
+
+* 针对于简单的协议而言，**解决方案一**能满足条件，但如果是一个复杂的协议的话，使用方案一的解决方案就会使得协议的扩展性降低。针对于这种情况下，官网的解决方案是：**使用编码器**处理。
+
+* 在之前的文章也有提到，所有的程序最终都离不开**读取请求、解析请求、处理请求、编码响应内容、发送响应内容**的步骤，出现碎片化的原因就是在接收信息的情况下，操作系统可能不会按照我们期望的逻辑来处理，针对当前案例来说。不存在客户端向服务端发数据的情况，因此只有服务器向客户端发送当前日期的情况下发生碎片化情况。所以，我们需要在客户端读取数据之前，添加一个自定义的**编码器**，其编码器的主要作用就是解决读取数据的碎片化问题。
+
+* 在方案二中，我们需要做两件事情：
+
+  1. 编写客户端的编码器
+  2. 把编码器添加到TimeClientHandler之前，优先于TimeClientHandler执行
+
+* 编写客户端解码器：
+
+  ![TimeDecoder.png](TimeDecoder.png)
+
+* 把编码器添加到TimeClientHandler之前，优先于TimeClientHandler执行。改造TimeClient，添加TimeDecoder编码器
+
+  ![TimeClientWithTimeDecoder.png](TimeClientWithTimeDecoder.png)
+
+* 解决方案二版本对应的代码地址：[https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version3](https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version3)
+
+### 2.3 传输POJO版本
+
+* 此部分可直接参考官方文档：[https://netty.io/wiki/user-guide-for-4.x.html#speaking-in-pojo-instead-of-bytebuf](https://netty.io/wiki/user-guide-for-4.x.html#speaking-in-pojo-instead-of-bytebuf)
+* 此部分的代码就不贴了，基本上也是大同小异，在编解码处做文章，其对应的demo地址如下所示：[https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version4](https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/timeserver/version4)
+
+## 三、总结
+
+* **其实这篇文章的总结没什么深度，但对于我个人而言还是挺有意义的，毕竟自己跟着官网的《User-Guide》的demo敲了一遍，并且去思考了官网中每一个标注的关键代码。还是那句话，学东西还是官网的最权威。跟着官网敲了一遍demo后，你真的就会发现，netty的开发模板以及实现自定义协议的套路了！**
+* **如果你觉得我的文章有用的话，欢迎点赞、收藏和关注。:laughing:**
+* **I'm a slow walker, but I never walk backwards**
+
+
+
+
+
+
 
