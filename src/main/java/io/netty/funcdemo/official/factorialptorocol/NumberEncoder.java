@@ -54,9 +54,6 @@ public class NumberEncoder extends MessageToByteEncoder<Number> {
          *                 因此，前6个字节F00001最终表示的BigInteger的值为：1。
          *           -> 读取完整个数据后，服务端需要计算结果，在这个demo中，服务端每次解析完后都会向客户端发送数据。
          *              因为计算4的阶乘时，服务端要想客户端发送4次数据。
-         *
-         *
-         *
          */
         out.writeByte((byte) 'F'); // magic number
         out.writeInt(dataLength);  // data length
