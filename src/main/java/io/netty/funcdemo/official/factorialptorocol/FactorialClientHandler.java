@@ -24,24 +24,20 @@ public class FactorialClientHandler extends SimpleChannelInboundHandler<BigInteg
     final BlockingQueue<BigInteger> answer = new LinkedBlockingQueue<BigInteger>();
 
     public BigInteger getFactorial() {
-        boolean interrupted = false;
+        BigInteger bigInteger = null;
         try {
-            for (;;) {
-                try {
-                    return answer.take();
-                } catch (InterruptedException ignore) {
-                    interrupted = true;
-                }
-            }
+            // 主线程阻塞在这里，等待channelRead0方法往队列中添加元素，这里才会被解除阻塞
+            bigInteger = answer.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            return bigInteger;
         }
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        // 客户端一连接到服务器就向服务器发送数据
         this.ctx = ctx;
         sendNumbers();
     }
@@ -68,28 +64,11 @@ public class FactorialClientHandler extends SimpleChannelInboundHandler<BigInteg
     }
 
     private void sendNumbers() {
-        // Do not send more than 4096 numbers.
-        ChannelFuture future = null;
         for (int i = 0; i < 4096 && next <= FactorialClient.COUNT; i++) {
-            future = ctx.write(Integer.valueOf(next));
+            ctx.write(Integer.valueOf(next));
             next++;
-        }
-        if (next <= FactorialClient.COUNT) {
-            assert future != null;
-            future.addListener(numberSender);
         }
         ctx.flush();
     }
 
-    private final ChannelFutureListener numberSender = new ChannelFutureListener() {
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-            if (future.isSuccess()) {
-                sendNumbers();
-            } else {
-                future.cause().printStackTrace();
-                future.channel().close();
-            }
-        }
-    };
 }
