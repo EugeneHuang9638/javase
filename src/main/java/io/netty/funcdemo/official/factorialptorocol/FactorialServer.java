@@ -11,13 +11,11 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 /**
- * Receives a sequence of integers from a {@link FactorialClient} to calculate
- * the factorial of the specified integer.
+ * 递归协议客户端
  */
 public final class FactorialServer {
 
-    // 从环境变量中去配置是否支持ssl
-    static final int PORT = Integer.parseInt(System.getProperty("port", "8322"));
+    static final int PORT = 8322;
 
     public static void main(String[] args) throws Exception {
 
@@ -33,7 +31,7 @@ public final class FactorialServer {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast(new BigIntegerDecoder());
-                            pipeline.addLast(new NumberEncoder());
+                            pipeline.addLast(new BigIntegerEncoder());
                             pipeline.addLast(new FactorialServerHandler());
                         }
                     });

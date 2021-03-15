@@ -7,24 +7,18 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import java.math.BigInteger;
 
 /**
- * Encodes a {@link Number} into the binary representation prepended with
- * a magic number ('F' or 0x46) and a 32-bit length prefix.  For example, 42
- * will be encoded to { 'F', 0, 0, 0, 1, 42 }.
+ * 编码逻辑：
+ * 假设此时要给服务端发送数据new BigInteger("4")
+ * 那么经过此编码器后的数据结构为：
+ * F11 <=> 7011
+ *
  */
-public class NumberEncoder extends MessageToByteEncoder<Number> {
+public class BigIntegerEncoder extends MessageToByteEncoder<BigInteger> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Number msg, ByteBuf out) {
-        // Convert to a BigInteger first for easier implementation.
-        BigInteger v;
-        if (msg instanceof BigInteger) {
-            v = (BigInteger) msg;
-        } else {
-            v = new BigInteger(String.valueOf(msg));
-        }
-
+    protected void encode(ChannelHandlerContext ctx, BigInteger msg, ByteBuf out) {
         // Convert the number into a byte array.
-        byte[] data = v.toByteArray();
+        byte[] data = msg.toByteArray();
         int dataLength = data.length;
 
         /**
