@@ -6,6 +6,9 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
+/**
+ * 注意点：要根据实际的拆解数据情况来标记已经读取的index
+ */
 public class ChatDecoder extends ByteToMessageDecoder {
 
     @Override
@@ -16,8 +19,11 @@ public class ChatDecoder extends ByteToMessageDecoder {
          */
         if (in.readableBytes() >= 4) {
             int readableNum = in.readInt();
-            // 校验剩余可读的字节是否满足长度
+            // 校验剩余可读的字节是否满足长度。
             if (in.readableBytes() < readableNum) {
+                /**
+                 * 这里将index重置到数据包的起始位置，这种情况一定是拆包了，我们需要等待数据包的下一次到来
+                 */
                 in.resetReaderIndex();
                 return;
             }
@@ -25,6 +31,13 @@ public class ChatDecoder extends ByteToMessageDecoder {
             byte[] bytes = new byte[readableNum];
             // 读取指定长度的数据
             in.readBytes(bytes);
+            /**
+             * 核心点：一定要标注已经读取的index
+             * 否则当出现拆包时，执行到了上面的22行：重置reader的index。
+             * 假设不标记已经读取的index的话，执行resetReaderIndex时就会将index至为0.
+             * 就相当于所有读取到的数据又会被重新读取一次。
+             */
+            in.markReaderIndex();
             out.add(new ChatDataPacket(readableNum, bytes));
         }
     }

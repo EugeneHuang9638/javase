@@ -58,6 +58,8 @@ public class NettyClient {
                 int length = bytes.length;
                 channel.writeAndFlush(new ChatDataPacket(length, bytes));
             }
+            System.in.read();
+
 
         } catch (Exception e) {
             e.printStackTrace();

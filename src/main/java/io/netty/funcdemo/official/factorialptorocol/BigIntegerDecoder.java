@@ -30,8 +30,6 @@ public class BigIntegerDecoder extends ByteToMessageDecoder {
             return;
         }
 
-        in.markReaderIndex();
-
         // 校验接收的数据包是否以F开头
         int magicNumber = in.readUnsignedByte();
         if (magicNumber != 'F') {
@@ -48,10 +46,15 @@ public class BigIntegerDecoder extends ByteToMessageDecoder {
         }
 
         /**
-         * 读取并转换成真正需要计算的bigInteger，写入到out中
+         * 执行到这里则表示数据包的结构是符合要求的。
+         * 接下来需要：
+         * 1、读取并转换成真正需要计算的bigInteger，写入到out中
+         * 2、标记已经读取的index
          */
         byte[] decoded = new byte[dataLength];
         in.readBytes(decoded);
+
+        in.markReaderIndex();
 
         out.add(new BigInteger(decoded));
     }
