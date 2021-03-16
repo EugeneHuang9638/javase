@@ -49,13 +49,57 @@
 
   ![messageToByte.png](messageToByte.png)
 
-### 2.3 factorial protocol处理数据碎片化的解决方案
+### 2.3 factorial protocol处理数据碎片化的解决方案 & 入站出站执行流程
 
-* 在time protocol中其实也有说过官方处理**数据碎片化**的两种解决方案，在本例中，我们直接采取第二种解决方案来处理。其中，还包含了**数据包收发的特殊定义**，在这种定义下，可以**解决数据格式不统一、数据碎片化的情况**，详细的处理数据碎片化的逻辑细看下图：
+* 在time protocol中其实也有说过官方处理**数据碎片化**的两种解决方案，在本例中，我们直接采取第二种解决方案来处理。其中，还包含了**数据包收发的特殊定义**，在这种定义下，可以**解决数据格式不统一、数据碎片化的情况**，详细的**出站入站流程**细看下图：
 
-  
+  ![客户端出站 & 服务端入站流程.png](客户端出站 & 服务端入站流程.png)
+
+  **数据碎片化（拆包粘包）解决方案**细看下图：
+
+  ![拆包粘包处理方案.png](拆包粘包处理方案.png)
+
+## 三、代码实现
+
+* 先看我们的编解码器，对照上图来理解它处理数据碎片化的方案
+
+### 3.1 编解码器
+
+* 编码器
+
+  ![BigIntegerEncoder.png](BigIntegerEncoder.png)
+
+* 解码器
+
+  ![BigIntegerDecoder.png](BigIntegerDecoder.png)
+
+### 3.2  服务端 & 服务端handler
+
+* 服务端启动类，其主要工作就是绑定端口，为pipeline添加指定的handler
+
+  ![FactorialServer.png](FactorialServer.png)
+
+* 服务端handler
+
+  ![FactorialServerHandler.png](FactorialServerHandler.png)
+
+### 3.3 客户端 & 客户端handler
+
+* 客户端入口，其主要工作就是连接服务器，为pipeline添加指定的handler，获取服务端的计算结果
+
+  ![FactorialClient.png](FactorialClient.png)
+
+* 客户端handler
+
+  ![FactorialClientHandler.png](FactorialClientHandler.png)
+
+## 四、总结
+
+* **本次总结，咱们从官网的Factorial Protocol出发，画图总结了出站入站的执行流程、粘包粘包的解决方案。在整理粘包拆包过程中，还对字节数组以及一些基本数据类型在字节数组中的存储方式（占用字节大小），在需要自己操作编解码操作时，这还是很重要的。**
+* **如果你觉得我的文章有用的话，欢迎点赞、收藏和关注。:laughing:**
+* **I'm a slow walker, but I never walk backwards**
 
 
 
-## 三、
+
 

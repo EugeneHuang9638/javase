@@ -11,7 +11,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 /**
- * 递归协议客户端
+ * 递归协议服务端
  */
 public final class FactorialServer {
 

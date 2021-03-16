@@ -24,9 +24,10 @@ public class FactorialClientHandler extends SimpleChannelInboundHandler<BigInteg
         try {
             /**
              * 主线程阻塞在这里，等待channelRead0方法往队列中添加元素，这里才会被解除阻塞
-             *
              * 调用处：
              * @see FactorialClient#getResult(io.netty.funcdemo.official.factorialptorocol.FactorialClientHandler)
+             * 当客户端的channelContext close后，会往队列中添加元素，此时解除阻塞
+             * @see FactorialClientHandler#channelRead0(io.netty.channel.ChannelHandlerContext, java.math.BigInteger)
              */
             bigInteger = answer.take();
         } catch (InterruptedException e) {
