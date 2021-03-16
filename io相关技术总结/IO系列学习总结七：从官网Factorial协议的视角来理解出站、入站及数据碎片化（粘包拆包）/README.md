@@ -95,7 +95,7 @@
 
 ## 四、总结
 
-* **本次总结，咱们从官网的Factorial Protocol出发，画图总结了出站入站的执行流程、粘包粘包的解决方案。在整理粘包拆包过程中，还对字节数组以及一些基本数据类型在字节数组中的存储方式（占用字节大小），在需要自己操作编解码操作时，这还是很重要的。**
+* **本次总结，咱们从官网的Factorial Protocol出发，画图总结了出站入站的执行流程、粘包粘包的解决方案。在整理粘包拆包过程中，还对字节数组以及一些基本数据类型在字节数组中的存储方式（占用字节大小），在需要自己操作编解码操作时，这还是很重要的。代码地址：[点击跳转](https://github.com/AvengerEug/javase/tree/develop/src/main/java/io/netty/funcdemo/official/factorialptorocol)**
 * **如果你觉得我的文章有用的话，欢迎点赞、收藏和关注。:laughing:**
 * **I'm a slow walker, but I never walk backwards**
 
