@@ -5,8 +5,6 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 
 import java.util.Scanner;
 
@@ -56,7 +54,7 @@ public class NettyClient {
                 String content = "老哥 你好呀！我是avengerEug" + i;
                 byte[] bytes = content.getBytes();
                 int length = bytes.length;
-                channel.writeAndFlush(new ChatDataPacket(length, bytes));
+                channel.writeAndFlush(new ChatPacket(length, bytes));
             }
             System.in.read();
 

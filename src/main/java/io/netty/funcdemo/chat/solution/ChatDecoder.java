@@ -38,7 +38,7 @@ public class ChatDecoder extends ByteToMessageDecoder {
              * 就相当于所有读取到的数据又会被重新读取一次。
              */
             in.markReaderIndex();
-            out.add(new ChatDataPacket(readableNum, bytes));
+            out.add(new ChatPacket(readableNum, bytes));
         }
     }
 }

@@ -12,7 +12,7 @@ import java.util.Iterator;
 /**
  * 自定义handler需要继承netty规范好的某个handlerAdapter（规范）
  */
-public class ChatServerHandler extends SimpleChannelInboundHandler<ChatDataPacket> {
+public class ChatServerHandler extends SimpleChannelInboundHandler<ChatPacket> {
 
     /**
      * GlobalEventExecutor：顾名思义，是一个全局的事件执行器，单例的。
@@ -33,7 +33,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatDataPacke
         String content = "【客户端：" + channel.remoteAddress() + "】 上线了";
         byte[] bytes = content.getBytes();
         int length = bytes.length;
-        CHANNEL_GROUP.writeAndFlush(new ChatDataPacket(length, bytes));
+        CHANNEL_GROUP.writeAndFlush(new ChatPacket(length, bytes));
 
         // 在客户端中维护所有连接到服务器的channel
         CHANNEL_GROUP.add(channel);
@@ -47,7 +47,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatDataPacke
      * @throws Exception
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ChatDataPacket msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ChatPacket msg) throws Exception {
         // 当前发送消息给服务器的客户端channel
         Channel currentChannel = ctx.channel();
         // 将msg转化成ByteBuf，类似于NIO的byteBuffer
@@ -66,7 +66,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatDataPacke
             }
             byte[] bytes = content.getBytes();
             int length = bytes.length;
-            channel.writeAndFlush(new ChatDataPacket(length, bytes));
+            channel.writeAndFlush(new ChatPacket(length, bytes));
         }
     }
 
@@ -101,7 +101,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatDataPacke
                 String content = "【客户端：" + channel.remoteAddress() + " 】下线了";
                 byte[] bytes = content.getBytes();
                 int length = bytes.length;
-                channel.writeAndFlush(new ChatDataPacket(length, bytes));
+                channel.writeAndFlush(new ChatPacket(length, bytes));
             }
         }
     }

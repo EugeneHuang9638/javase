@@ -2,7 +2,7 @@ package io.netty.funcdemo.chat.solution;
 
 import java.io.Serializable;
 
-public class ChatDataPacket implements Serializable {
+public class ChatPacket implements Serializable {
 
     private int length;
 
@@ -24,7 +24,7 @@ public class ChatDataPacket implements Serializable {
         this.data = data;
     }
 
-    public ChatDataPacket(int length, byte[] data) {
+    public ChatPacket(int length, byte[] data) {
         this.length = length;
         this.data = data;
     }
