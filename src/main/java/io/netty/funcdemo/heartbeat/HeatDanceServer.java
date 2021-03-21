@@ -1,10 +1,12 @@
-package io.netty.funcdemo.heatdancecheck;
+package io.netty.funcdemo.heartbeat;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
@@ -29,7 +31,23 @@ public class HeatDanceServer {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             // 对workerGroup的socketChannel新增心空闲状态处理器  <=> 心跳检测
-                            ch.pipeline().addLast(new HeadServerHandler(), new IdleStateHandler(3, 0, 0, TimeUnit.SECONDS));
+                            ChannelPipeline pipeline = ch.pipeline();
+                            pipeline.addLast(new StringEncoder());
+                            pipeline.addLast(new StringDecoder());
+                            /**
+                             * 配置一个限制状态的handler，其主要功能就是我们说的心跳检测。
+                             * 此handler的构造器中主要核心参数为4个：
+                             * 1、long readerIdleTime  ==> 读空闲时间：顾名思义，当读事件空闲的时间超过设置的时间时，会触发对应的读超时事件
+                             * 2、long writerIdleTime  ==> 写空闲时间：顾名思义，当写事件空闲的时间超过设置的时间时，会触发对应的写超时事件
+                             * 3、long allIdleTime     ==> 读写空闲时间：顾名思义，当读写事件的空闲事件超过设置的事件时，会触发对应的读写超时事件
+                             * 4、unit ==> 上述三个数字的时间单位。
+                             *
+                             * 通常，不会让此handler放在最后面，如果放在最后面就会导致IdleStateHandler变得无意义。因为此
+                             * handler触发对应的读事件超时、写事件超时、读写数据超时会触发一些事件，这些事件只有后面的handler
+                             * 才能感知到。因为pipeline中的handler是顺序执行的，当前handler触发的事件只有后面的handler能感知到
+                             */
+                            pipeline.addLast(new IdleStateHandler(3, 0, 0, TimeUnit.SECONDS));
+                            pipeline.addLast(new HeadServerHandler());
                         }
                     });
             System.out.println("开始启动服务器");
