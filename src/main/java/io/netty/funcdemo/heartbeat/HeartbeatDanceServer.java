@@ -11,7 +11,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
 
-public class HeatDanceServer {
+public class HeartbeatDanceServer {
 
     public static void main(String[] args) {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
@@ -47,7 +47,7 @@ public class HeatDanceServer {
                              * 才能感知到。因为pipeline中的handler是顺序执行的，当前handler触发的事件只有后面的handler能感知到
                              */
                             pipeline.addLast(new IdleStateHandler(3, 0, 0, TimeUnit.SECONDS));
-                            pipeline.addLast(new HeadServerHandler());
+                            pipeline.addLast(new HeartbeatServerHandler());
                         }
                     });
             System.out.println("开始启动服务器");
