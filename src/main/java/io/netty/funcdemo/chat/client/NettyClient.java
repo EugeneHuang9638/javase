@@ -34,26 +34,26 @@ public class NettyClient {
             ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 9000).sync();
             Channel channel = channelFuture.channel();
             Scanner scanner;
-            while (true) {
-                scanner = new Scanner(System.in);
-                // 设置scanner遇到换行符才读取数据，默认是遇到空格和换行都会读取数据的
-                scanner.useDelimiter("\n");
-                String next = scanner.next();
-
-                channel.writeAndFlush(next);
-            }
-
-            /**
-             * 测试拆包粘包：
-             * 第一步：将37-44行的代码注释打开，开启第一个客户端
-             * 第二步：将下面注释部分的代码打开，开启第二个客户端
-             * 第三步：到第一个客户端中去查看，看服务端发送给客户端的数据都是怎样的。（可以重复运行第二步和第三步，来查看不同的现象）
-             *
-             * 解决方案：以固定的格式告诉我当前这条消息的数据有多长，告诉服务端什么时候可以开始拆解数据了，以及拆解多少数据
-             */
-//            for (int i = 0; i < 200; i++) {
-//                channel.writeAndFlush("老哥 你好呀！我是avengerEug");
+//            while (true) {
+//                scanner = new Scanner(System.in);
+//                // 设置scanner遇到换行符才读取数据，默认是遇到空格和换行都会读取数据的
+//                scanner.useDelimiter("\n");
+//                String next = scanner.next();
+//
+//                channel.writeAndFlush(next);
 //            }
+
+//            /**
+//             * 测试拆包粘包：
+//             * 第一步：将37-44行的代码注释打开，开启第一个客户端
+//             * 第二步：将下面注释部分的代码打开，开启第二个客户端
+//             * 第三步：到第一个客户端中去查看，看服务端发送给客户端的数据都是怎样的。（可以重复运行第二步和第三步，来查看不同的现象）
+//             *
+//             * 解决方案：以固定的格式告诉我当前这条消息的数据有多长，告诉服务端什么时候可以开始拆解数据了，以及拆解多少数据
+//             */
+            for (int i = 0; i < 200; i++) {
+                channel.writeAndFlush("兄弟 你好呀！我是avengerEug");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

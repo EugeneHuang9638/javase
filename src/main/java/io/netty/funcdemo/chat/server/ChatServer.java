@@ -13,14 +13,6 @@ public class ChatServer {
 
     public static void main(String[] args) {
 
-        /**
-         * 创建两个线程组bossGroup和workerGroup，含有的子线程NioEventLoop的个数默认为cpu核心数的两倍
-         * bossGroup 只是处理连接请求，真正的处理客户端业务会交给workerGroup完成
-         *
-         * bossGroup对比于主从reactor模型下的mainReactor
-         * workerGroup对比于主从reactor模型下的subReactor模型
-         *
-         */
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
@@ -37,7 +29,7 @@ public class ChatServer {
                         // 创建通道初始化对象，设置初始化参数
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            // 对workerGroup的socketChannel设置处理器
+                            // 对workerGroup的socketChannel设置编解码处理器及服务端的处理器
                             ChannelPipeline pipeline = ch.pipeline();
                             pipeline.addLast("decoder", new StringDecoder());
                             pipeline.addLast("encoder", new StringEncoder());
@@ -50,18 +42,6 @@ public class ChatServer {
             // 启动服务器（并绑定端口），bind是异步操作，sync方法是等待异步操作执行完毕
             ChannelFuture channelFuture = bootstrap.bind(9000).sync();
 
-            // 给channelFuture注册监听器
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (channelFuture.isSuccess()) {
-                        System.out.println("监听端口9000成功");
-                    } else {
-                        System.out.println("监听端口9000失败");
-                    }
-                }
-            });
-
             // 对通道关闭进行监听，closeFuture是异步操作，监听通道关闭
             // 通过sync方法同步等待通道关闭处理完毕，这里会阻塞等待通道关闭完成。
             channelFuture.channel().closeFuture().sync();
@@ -71,7 +51,5 @@ public class ChatServer {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
-
-
     }
 }

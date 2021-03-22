@@ -15,30 +15,34 @@ import java.util.Iterator;
 public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
 
     /**
-     * GlobalEventExecutor：顾名思义，是一个全局的事件执行器，单例的。
-     * 现在只是把这个对象拿到，并放到channelGroup中
+     * GlobalEventExecutor：是一个全局的事件执行器，单例的。
+     * 现在只是把这个对象拿到，并放到channelGroup中，可以实现在服务器端维护好所有的channel
      */
     private static ChannelGroup CHANNEL_GROUP = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     /**
-     * 每个客户端连接上服务器时，都会回调这个方法
-     * 此时我们将客户端的channel保存到服务端，
-     * 然后在客户端发送消息时，遍历所有的客户端，达到群发的目的
+     * 每个客户端连接上服务器时，都会回调这个方法。
+     * 此时我们需要告诉其他客户端，xxx上线了
+     * 除此之外，我们还需要将客户端的channel保存到服务端，
+     * 后续在客户端发送消息时，需要遍历所有的客户端，达到群发的目的
      * @param ctx
      * @throws Exception
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        CHANNEL_GROUP.writeAndFlush("【客户端：" + channel.remoteAddress() + "】 上线了");
+        CHANNEL_GROUP.writeAndFlush("[客户端：" + channel.remoteAddress() + "] 上线了");
 
         // 在客户端中维护所有连接到服务器的channel
         CHANNEL_GROUP.add(channel);
-        System.out.println("【客户端：" + channel.remoteAddress() + "】 上线了，当前连接客户端数量：" + CHANNEL_GROUP.size());
+        System.out.println("[客户端：" + channel.remoteAddress() + "] 上线了，当前连接客户端数量：" + CHANNEL_GROUP.size());
     }
 
     /**
      * 读取客户端发送的数据
+     * 将客户端发来的消息广播给其他客户端：
+     * （这里其实可以使用CHANNEL_GROUP直接群发的，但这里选择了遍历发。
+     * 需要遍历的原因是：区分自己发送的消息）
      * @param ctx 上下文对象，含有通道channel，管道pipeline
      * @param msg 客户端发送的数据
      * @throws Exception
@@ -50,15 +54,15 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
         // 将msg转化成ByteBuf，类似于NIO的byteBuffer
 
         // 向每个客户端发送数据
-        System.out.println("【客户端：" + currentChannel.remoteAddress() + "】发来的消息：" + msg);
+        System.out.println("[客户端：" + currentChannel.remoteAddress() + "]发来的消息：" + msg);
         Iterator<Channel> iterator = CHANNEL_GROUP.iterator();
         while (iterator.hasNext()) {
             Channel channel = iterator.next();
             String content;
             if (currentChannel == channel) {
-                content = "【自己】发送的消息：" + msg;
+                content = "[自己]发送的消息：" + msg;
             } else {
-                content = "【客户端：" + currentChannel.remoteAddress() + "】发来的消息：" + msg;
+                content = "[客户端：" + currentChannel.remoteAddress() + "]发来的消息：" + msg;
             }
             channel.writeAndFlush(content);
         }
@@ -84,7 +88,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        System.out.println("【客户端：" + channel.remoteAddress() + " 】下线了");
+        System.out.println("[客户端：" + channel.remoteAddress() + " ]下线了");
         Iterator<Channel> iterator = CHANNEL_GROUP.iterator();
         while (iterator.hasNext()) {
             Channel channelInner = iterator.next();
@@ -92,7 +96,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
                 // 移除
                 iterator.remove();
             } else {
-                channel.writeAndFlush("【客户端：" + channel.remoteAddress() + " 】下线了");
+                channel.writeAndFlush("[客户端：" + channel.remoteAddress() + " ]下线了");
             }
         }
     }

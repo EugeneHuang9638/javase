@@ -30,14 +30,14 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatPacket> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        String content = "【客户端：" + channel.remoteAddress() + "】 上线了";
+        String content = "[客户端：" + channel.remoteAddress() + "] 上线了";
         byte[] bytes = content.getBytes();
         int length = bytes.length;
         CHANNEL_GROUP.writeAndFlush(new ChatPacket(length, bytes));
 
         // 在客户端中维护所有连接到服务器的channel
         CHANNEL_GROUP.add(channel);
-        System.out.println("【客户端：" + channel.remoteAddress() + "】 上线了，当前连接客户端数量：" + CHANNEL_GROUP.size());
+        System.out.println("[客户端：" + channel.remoteAddress() + "] 上线了，当前连接客户端数量：" + CHANNEL_GROUP.size());
     }
 
     /**
@@ -54,16 +54,22 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatPacket> {
 
         // 向每个客户端发送数据
         String msgData = new String(msg.getData());
-        System.out.println("【客户端：" + currentChannel.remoteAddress() + "】发来的消息：" + msgData);
+        System.out.println("[客户端：" + currentChannel.remoteAddress() + "]发来的消息：" + msgData);
         Iterator<Channel> iterator = CHANNEL_GROUP.iterator();
         while (iterator.hasNext()) {
             Channel channel = iterator.next();
             String content;
             if (currentChannel == channel) {
-                content = "【自己】发送的消息：" + msgData;
+                content = "[自己]发送的消息：" + msgData;
             } else {
-                content = "【客户端：" + currentChannel.remoteAddress() + "】发来的消息：" + msgData;
+                content = "[客户端：" + currentChannel.remoteAddress() + "]发来的消息：" + msgData;
             }
+
+            /**
+             * =============
+             *  核心地方：组装成指定的数据包，发送给客户端
+             * =============
+             */
             byte[] bytes = content.getBytes();
             int length = bytes.length;
             channel.writeAndFlush(new ChatPacket(length, bytes));
@@ -90,7 +96,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatPacket> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Channel channel = ctx.channel();
-        System.out.println("【客户端：" + channel.remoteAddress() + " 】下线了");
+        System.out.println("[客户端：" + channel.remoteAddress() + " ]下线了");
         Iterator<Channel> iterator = CHANNEL_GROUP.iterator();
         while (iterator.hasNext()) {
             Channel channelInner = iterator.next();
@@ -98,7 +104,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<ChatPacket> {
                 // 移除
                 iterator.remove();
             } else {
-                String content = "【客户端：" + channel.remoteAddress() + " 】下线了";
+                String content = "[客户端：" + channel.remoteAddress() + " ]下线了";
                 byte[] bytes = content.getBytes();
                 int length = bytes.length;
                 channel.writeAndFlush(new ChatPacket(length, bytes));

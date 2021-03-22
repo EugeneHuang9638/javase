@@ -31,16 +31,16 @@ public class NettyClient {
             ChannelFuture channelFuture = bootstrap.connect("127.0.0.1", 9000).sync();
             Channel channel = channelFuture.channel();
             Scanner scanner;
-//            while (true) {
-//                scanner = new Scanner(System.in);
-//                // 设置scanner遇到换行符才读取数据，默认是遇到空格和换行都会读取数据的
-//                scanner.useDelimiter("\n");
-//                String next = scanner.next();
-//
-//                byte[] bytes = next.getBytes();
-//                int length = bytes.length;
-//                channel.writeAndFlush(new ChatDataPacket(length, bytes));
-//            }
+            while (true) {
+                scanner = new Scanner(System.in);
+                // 设置scanner遇到换行符才读取数据，默认是遇到空格和换行都会读取数据的
+                scanner.useDelimiter("\n");
+                String next = scanner.next();
+
+                byte[] bytes = next.getBytes();
+                int length = bytes.length;
+                channel.writeAndFlush(new ChatPacket(length, bytes));
+            }
 
             /**
              * 测试拆包粘包：
@@ -50,13 +50,13 @@ public class NettyClient {
              *
              * 解决方案：以固定的格式告诉我当前这条消息的数据有多长，告诉服务端什么时候可以开始拆解数据了，以及拆解多少数据
              */
-            for (int i = 0; i < 25; i++) {
-                String content = "老哥 你好呀！我是avengerEug" + i;
-                byte[] bytes = content.getBytes();
-                int length = bytes.length;
-                channel.writeAndFlush(new ChatPacket(length, bytes));
-            }
-            System.in.read();
+//            for (int i = 0; i < 25; i++) {
+//                String content = "老哥 你好呀！我是avengerEug" + i;
+//                byte[] bytes = content.getBytes();
+//                int length = bytes.length;
+//                channel.writeAndFlush(new ChatPacket(length, bytes));
+//            }
+//            System.in.read();
 
 
         } catch (Exception e) {
