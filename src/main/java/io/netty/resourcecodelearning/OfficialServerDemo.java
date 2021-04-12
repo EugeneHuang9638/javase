@@ -3,6 +3,7 @@ package io.netty.resourcecodelearning;
 import io.netty.bootstrap.AbstractBootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
+import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -14,10 +15,10 @@ import io.netty.funcdemo.base.handler.NettyServerHandler;
  * 记录一个问题：
  *
  *public NioServerSocketChannel(){
-        *this(newSocket(DEFAULT_SELECTOR_PROVIDER));
-        *}
+      this(newSocket(DEFAULT_SELECTOR_PROVIDER));
+  }
  *
- * 这种无参构造方法调用有参构造方法，最终会有几个对象产生呢？
+ * 这种无参构造方法调用有参构造方法，最终会有几个对象产生呢？  --> 一个
  *
  */
 public class OfficialServerDemo {
@@ -31,7 +32,7 @@ public class OfficialServerDemo {
 
 
             /**
-             * 第一行代码：创建boosGroup的EventLoopGroup
+             * 第一行代码：创建bossGroup的EventLoopGroup
              *
              * 指定了线程数为1，Executor传入null（内部使用默认的executor：new ThreadPerTaskExecutor(newDefaultThreadFactory());），
              * 使用的select策略工厂为默认策略工厂 -> DefaultSelectStrategyFactory.INSTANCE
@@ -82,16 +83,24 @@ public class OfficialServerDemo {
 
 
             /**
-             * bind方法，类似于spring的refresh方法，真正的开始服务和绑定端口
+             * bind方法，其地位类似于spring的refresh方法，真正的开始服务和绑定端口
              * 1、{@link AbstractBootstrap#initAndRegister()} 方法初始化了channel（利用了channelFactory内部维护的无参构造器对象创建出来了一个NioServerSocketChannel实例），
-             *   因此，我们需要去看下NioServerSocketChannel的内部结构。
-             *   其内部包含了nio服务器的一系列信息，在NioServerSocketChannel对象的构建过程中做了如下几件事：
-             *   1.1、使用java nio创建open了一个serverSocketChannel，获取到了一个channel
-             *   1.2、内部维护了SelectionKey.OP_ACCEPT事件的属性，目前还没与channel绑定起来（后续绑定端口后再拿这个属性注册到selector中去）
-             *   1.3、父类配置了channel为非阻塞模式
+             *   因此，我们需要去看下NioServerSocketChannel的构造方法做了哪些事情。
+             *   其最终会调用到{@link NioServerSocketChannel#NioServerSocketChannel(java.nio.channels.ServerSocketChannel)}构造方法，
+             *   此构造方法一共有两段代码：
+             *   1.1、super(null, channel, SelectionKey.OP_ACCEPT);
+             *      其内部包含了nio服务器的一系列信息，在NioServerSocketChannel对象的构建过程中做了如下几件事：
+             *      1.1.1、使用java nio创建open了一个serverSocketChannel，获取到了一个channel
+             *      1.1.2、内部维护了SelectionKey.OP_ACCEPT事件的属性，目前还没与channel绑定起来（后续绑定端口后再拿这个属性注册到selector中去）
+             *      1.1.3、父类{@link AbstractNioChannel#AbstractNioChannel(io.netty.channel.Channel, java.nio.channels.SelectableChannel, int)}配置了channel为非阻塞模式，
+             *             同时还初始化了内部一系列属性的初始值，eg：{@link AbstractChannel#unsafe} {@link io.netty.channel.AbstractChannel#pipeline}。
+             *             其中所谓的pipeline就是我们后续入站、出站操作会经过的pipeline，内部是一个ChannelHandlerContext类型的双向链表（默认一个head和tail）.
+             *   1.2、config = new NioServerSocketChannelConfig(this, javaChannel().socket());
+             *      其内部主要作用为：维护了NioServerSocketChannel的配置，内部维护了一个socket
+             * 2、{@link AbstractBootstrap#initAndRegister()} 方法还执行了{@link AbstractBootstrap#init(io.netty.channel.Channel)}方法，其内部主要执行了
+             *    {@link ServerBootstrap#init(io.netty.channel.Channel)}方法，在pipeline的head和tail之间添加一个ChannelHandlerContext
              *
-             * TODO 源码阅读到 {@link NioServerSocketChannel#NioServerSocketChannel(java.nio.channels.ServerSocketChannel)}
-             * 的第一行代码。后面的代码还没来得及分析。
+             *
              */
             ChannelFuture channelFuture = bootstrap.bind(9000).sync();
 
