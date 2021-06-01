@@ -1,4 +1,4 @@
-package com.eugene.basic.futurepattern;
+package com.eugene.basic.futurepattern.customer;
 
 /**
  * FutureData实现了一个快速返回的RealData包装。它只是一个包装，或者说是一个RealData的虚拟实现。

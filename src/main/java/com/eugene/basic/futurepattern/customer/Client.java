@@ -1,4 +1,4 @@
-package com.eugene.basic.futurepattern;
+package com.eugene.basic.futurepattern.customer;
 
 /**
  * 客户端程序：client主要实现了获取FutureData，开启构造ReadData的线程功能。

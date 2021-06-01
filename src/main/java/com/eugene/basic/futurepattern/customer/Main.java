@@ -1,4 +1,4 @@
-package com.eugene.basic.futurepattern;
+package com.eugene.basic.futurepattern.customer;
 
 /**
  * main函数，它主要负责调用Client发起请求，并消费返回的数据

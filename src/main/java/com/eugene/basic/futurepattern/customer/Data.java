@@ -1,4 +1,4 @@
-package com.eugene.basic.futurepattern;
+package com.eugene.basic.futurepattern.customer;
 
 /**
  * data接口

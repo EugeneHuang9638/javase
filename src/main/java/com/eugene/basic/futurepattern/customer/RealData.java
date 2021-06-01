@@ -1,4 +1,4 @@
-package com.eugene.basic.futurepattern;
+package com.eugene.basic.futurepattern.customer;
 
 /**
  * RealData是最终需要使用的数据模型。它的构造很慢，
