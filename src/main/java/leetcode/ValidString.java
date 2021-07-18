@@ -104,4 +104,10 @@ public class ValidString {
         String target = "((({[]})))";
         System.out.println(valid(target));
     }
+
+    public static void validate(String s) {
+
+    }
+
+
 }
