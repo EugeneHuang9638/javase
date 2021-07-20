@@ -22,7 +22,7 @@ public class QuickSortTest {
             return;
         }
 
-        int splitIndex = getSplitIndex(arr, low, high);
+        int splitIndex = findBaseNumIndex(arr, low, high);
 
         System.out.println("找到相同的下标了，划分数组。下标为：" + splitIndex);
         System.out.println("此时的数组结构为：");
@@ -31,7 +31,7 @@ public class QuickSortTest {
         sort(arr, splitIndex + 1, high);
     }
 
-    private static int getSplitIndex(int[] arr, int low, int high) {
+    private static int findBaseNumIndex(int[] arr, int low, int high) {
         // 将下标为low的元素作为基数
         int baseNum = arr[low];
 

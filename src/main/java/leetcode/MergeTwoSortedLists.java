@@ -32,7 +32,7 @@ public class MergeTwoSortedLists {
 
         // System.out.println(merge(l11, l21));
         // System.out.println(iterate(l11, l21));
-        System.out.println(iterateAgain(l11, l21));
+        System.out.println(merged(l11, l21));
     }
 
     /**
@@ -231,6 +231,26 @@ public class MergeTwoSortedLists {
 
         // 获取preHead的下一个，因为第一个为-1，用来连接节点时使用的
         return preHead.next;
+    }
+
+
+    /**
+     * 合并两个有序链表
+     * @param listNode1
+     * @param listNode2
+     */
+    public static ListNode merged(ListNode listNode1, ListNode listNode2) {
+        if (listNode1 == null) {
+            return listNode2;
+        } else if (listNode2 == null) {
+            return listNode1;
+        } else if (listNode1.val > listNode2.val) {
+            listNode2.next = merge(listNode1, listNode2.next);
+            return listNode2;
+        } else {
+            listNode1.next = merge(listNode1.next, listNode2);
+            return listNode1;
+        }
     }
 
 }

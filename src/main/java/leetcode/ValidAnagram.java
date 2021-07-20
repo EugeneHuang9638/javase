@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 给定两个字符串 s 和 t ，编写一个函数来判断 t 是否是 s 的字母异位词。
+ * 给定两个字符串 s 和 t ，编写一个函数来判断 t 是否是 s 的字母异位词（长度一样，包含的字母都一样，每个字符出现的频率也一样，只是顺序不同而已）。
  *
  * 示例 1:
  * 输入: s = "anagram", t = "nagaram"

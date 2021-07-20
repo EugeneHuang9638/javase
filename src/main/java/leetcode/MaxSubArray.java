@@ -1,3 +1,4 @@
+
 package leetcode;
 
 /**
@@ -14,7 +15,7 @@ package leetcode;
  *
  * 步骤:
  *  1. 抽象出子问题(假设存在一个最大和的连续子数组并在存到dp数组中)
- *    假设dp[i-1]为nums中第i-1元素的最大和的连续子数组(从0到i-1连续计算的)
+ *    假设dp[i-1]为nums中最大和的连续子数组 ==> [0, 1, 2,.....,i-1]数组的和最大，
  *
  *  2. 列出递推关系(已知i-1如何求i)
  *    上述已经列出了numx中第i-1个元素的最大和的连续子数组，现在求dp[i]
@@ -61,6 +62,7 @@ public class MaxSubArray {
         for (int i = 1; i < nums.length; i++) {
             dp[i] = Math.max(nums[i], dp[i - 1] + nums[i]);
             result = Math.max(result, dp[i]);
+            System.out.println(dp[i]);
         }
 
         return result;

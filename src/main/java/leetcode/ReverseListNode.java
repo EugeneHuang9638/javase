@@ -61,27 +61,37 @@ public class ReverseListNode {
      * newNode = inner;
      *
      *
+     * 核心思路：
+     * 1、遍历链表，为每一个链表的值创建一个新节点对象
+     * 2、需要一个容器来存储当前构建的节点值
+     * 3、
+     *
      *
      * @param head
      * @return
      */
     public static ListNode reverseList2(ListNode head) {
-        ListNode newListNode = null;
+        // 临时容器
+        ListNode container = null;
 
         while (head != null) {
-            if (newListNode == null) {
-                newListNode = new ListNode(head.val);
+            if (container == null) {
+                // 此时的容器就是链表的第一个元素
+                container = new ListNode(head.val);
             } else {
+                // 第二、三、.... N个元素都走下面的逻辑
+                // 1、构建出新节点
                 ListNode inner = new ListNode(head.val);
-                inner.next = newListNode;
-
-                newListNode = inner;
+                // 2、将新节点放在container的后面
+                inner.next = container;
+                // 3、将inner赋值给container --> container一定是当前遍历的节点
+                container = inner;
             }
-
+            System.out.println("当前遍历的节点的值：" + container.val);
             head = head.next;
         }
 
-        return newListNode;
+        return container;
     }
 
 
@@ -97,7 +107,37 @@ public class ReverseListNode {
         listNode3.next = listNode4;
         listNode4.next = listNode5;
 
-        System.out.println(reverseList2(listNode1));
+        System.out.println(reverseList3(listNode1));
     }
+
+    /**
+     * 核心思想：
+     * 1、遍历链表
+     * 2、为每个遍历的链表的val构建成一个新对象
+     * 3、用一个container来存储反转后的链表。
+     * 4、宗旨为修改引用
+     * @param head
+     * @return
+     */
+    private static ListNode reverseList3(ListNode head) {
+        ListNode container = null;
+
+        while (head != null) {
+            if (container == null) {
+                container = new ListNode(head.val);
+            } else {
+                ListNode tmp = new ListNode(head.val);
+                tmp.next = container;
+
+                // 将已经反转后的节点复制给container，最终的container就是反转后的链表
+                container = tmp;
+            }
+
+            head = head.next;
+        }
+
+        return container;
+    }
+
 
 }
