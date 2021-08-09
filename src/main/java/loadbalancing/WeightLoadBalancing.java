@@ -32,29 +32,31 @@ public class WeightLoadBalancing {
             serviceContainer.put(1, "192.168.1.100");
             serviceContainer.put(2, "192.168.1.100");
 
-            serviceContainer.put(1, "192.168.1.101");
-            serviceContainer.put(2, "192.168.1.102");
-            serviceContainer.put(3, "192.168.1.103");
+            // 192.168.1.101的权重也为3
+            serviceContainer.put(3, "192.168.1.101");
+            serviceContainer.put(4, "192.168.1.102");
+            serviceContainer.put(5, "192.168.1.103");
 
             // 192.168.1.104的权重为5
-            serviceContainer.put(4, "192.168.1.104");
-            serviceContainer.put(5, "192.168.1.104");
             serviceContainer.put(6, "192.168.1.104");
             serviceContainer.put(7, "192.168.1.104");
             serviceContainer.put(8, "192.168.1.104");
+            serviceContainer.put(9, "192.168.1.104");
+            serviceContainer.put(10, "192.168.1.104");
 
-            serviceContainer.put(9, "192.168.1.105");
-            serviceContainer.put(10, "192.168.1.106");
-            serviceContainer.put(11, "192.168.1.107");
-            serviceContainer.put(12, "192.168.1.108");
-            serviceContainer.put(13, "192.168.1.109");
+            // 下面的权重都为1
+            serviceContainer.put(11, "192.168.1.105");
+            serviceContainer.put(12, "192.168.1.106");
+            serviceContainer.put(13, "192.168.1.107");
+            serviceContainer.put(14, "192.168.1.108");
+            serviceContainer.put(15, "192.168.1.109");
         }
 
         public static String random() {
             Random random = new Random();
-            int randomNum = random.nextInt(14);
+            int randomNum = random.nextInt(16);
             logger.info("随机数: " + randomNum);
-            // 范围[0,14)  ==>  0 - 13
+            // 范围[0,16)  ==>  0 - 15
             return serviceContainer.get(randomNum);
         }
 
