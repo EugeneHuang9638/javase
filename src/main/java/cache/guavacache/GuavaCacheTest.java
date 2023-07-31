@@ -3,7 +3,9 @@ package cache.guavacache;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -20,20 +22,48 @@ import java.util.concurrent.TimeUnit;
  */
 public class GuavaCacheTest {
 
+    // refresh时使用它来重新加载
+    public static CacheLoader<Object, Object> myCacheLoader = new CacheLoader<Object, Object>() {
+
+        public Object load(Object key) throws Exception {
+            return "88888";
+        }
+    };
+
     private final static Cache cache = CacheBuilder.newBuilder()
             // 设置cache的初始大小为10，要合理设置该值
             .initialCapacity(10)
             // 设置并发数为5，即同一时间可以有5个线程往cache执行写入操作数值设置越高并发能力越强
             .concurrencyLevel(5)
-            // 设置cache中的数据在写入之后的存活时间为5秒
-            .expireAfterWrite(5, TimeUnit.SECONDS)
+            // 设置cache中的数据在写入之后的存活时间为6秒
+            .expireAfterWrite(6, TimeUnit.SECONDS)
+            // 5s后，当前线程刷新最新线程，其他线程直接返回旧值（需要保证expireAfterWrite的过期时间比refreshAfterWrite长）
+            .refreshAfterWrite(5, TimeUnit.SECONDS)
             // 缓存这保存的最大key数量
+            .removalListener(notification -> {
+                System.out.println(notification.getKey() + " " + notification.getValue() + " 被移除,原因:" + notification.getCause());
+            })
             .maximumSize(10000)
             // 构建cache实例
-            .build();
+            .build(myCacheLoader);
 
+    public static void main(String[] args) throws ExecutionException, InterruptedException, IOException {
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        new Thread(() -> {
+            for (int i = 0; i < 11; i++) {
+                Object avengerEug = cache.getIfPresent("avengerEug");
+                if (avengerEug == null) {
+                    cache.put("avengerEug", i);
+                    avengerEug = "读线程" + i;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(Thread.currentThread().getName() + " --> avengerEug: " + avengerEug);
+            }
+        }, "读线程").start();
 
         /**
          * 我们通常是先从缓存中获取，如果缓存不存在则从数据库中取，然后再放到缓存中
@@ -41,16 +71,15 @@ public class GuavaCacheTest {
          * 第二个回调函数就是当缓存中key不存在时，则从callable中去
          */
         for (int i = 0; i < 11; i++) {
-            Object avengerEug = cache.get("avengerEug", new Callable() {
-                @Override
-                public Object call() throws Exception {
-                    System.out.println("模拟从数据库中取");
-                    return 1L;
-                }
-            });
+            Object avengerEug = cache.getIfPresent("avengerEug");
+            if (avengerEug == null) {
+                cache.put("avengerEug", i);
+                avengerEug = "写线程" + i;
+            }
 
-            System.out.println("avengerEug: " + avengerEug);
             Thread.sleep(1000);
+
+            System.out.println("写线程：avengerEug: " + avengerEug);
         }
 
     }

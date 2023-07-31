@@ -26,7 +26,7 @@ public class NioClient {
         while (true) {
             /**
              * 在selector中寻找一次，看selector中是否有事件发生，如果没有时间发生，则会阻塞到这里。
-             * 但由于我们在初始化客户端的过程中已经执行了连接服务器的操作 ---> 35行的代码
+             * 但由于我们在初始化客户端的过程中已经执行了连接服务器的操作 ---> 这段代码：clientSocketChannel.configureBlocking(false)
              * 因此此处不会阻塞，会往下执行
              *
              * 目前selector中只注册了一个clientSocketChannel，且这个clientSocketChannel对connect事件 “感兴趣”

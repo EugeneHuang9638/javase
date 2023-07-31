@@ -62,7 +62,7 @@ public class HitParentDelegationModel {
      * 当我们执行DriverManager.getConnection()方法时，因为DriverManager类是在rt.jar包下，
      * 所以DriverManager类肯定是由根类加载器加载的。又因为Class.forName的特性，所以在DriverManager
      * 类中调用的任何Class.forName方法使用的类加载器都是根加载器。(全盘委托机制)
-     * 因为我们没有显示的执行Class.forName("com.mysql.jdbc.Driver");代码，所以它会使用spi机制
+     * 因为我们没有显示的执行Class.forName("com.mysql.jdbc.Driver");代码，所以它会使用spi机制（jdbc自带的逻辑）
      * 在classpath下去找java.sql.Drivers的实现类，最终找到了com.mysql.jdbc.Driver类，那么问题来了,
      * 我要去加载这个类，肯定会使用Class.forName() api, 此时使用的类加载器肯定是根类加载器，而
      * com.mysql.jdbc.Driver不属于rt.jar包内。所以此时在内部使用了
