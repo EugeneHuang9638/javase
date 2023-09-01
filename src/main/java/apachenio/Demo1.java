@@ -41,7 +41,7 @@ public class Demo1 {
                 .setParameter(CoreProtocolPNames.USER_AGENT, "HttpComponents/1.1");
 
         // 创建一个reactor，其中有两个工作线程
-        final ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(1, params);
+        final ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(4, params);
 
         // 创建一个http的处理器，可以配置http的拦截器
         HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
@@ -82,9 +82,9 @@ public class Demo1 {
 
         SessionRequest[] reqs = new SessionRequest[3];
         reqs[0] = ioReactor.connect(
-                new InetSocketAddress("www.baidu.com", 80),
+                new InetSocketAddress("47.92.149.10", 80),
                 null,
-                new HttpHost("www.baidu.com"),
+                new HttpHost("47.92.149.10"),
                 new MySessionRequestCallback(requestCount));
         reqs[1] = ioReactor.connect(
                 new InetSocketAddress("www.taobao.com", 80),
@@ -139,7 +139,7 @@ public class Demo1 {
         }
 
         public HttpRequest submitRequest(final HttpContext context) {
-            System.out.println("submitRequest");
+            System.out.println(Thread.currentThread().getId() + ": submitRequest");
             HttpHost targetHost = (HttpHost) context.getAttribute(
                     ExecutionContext.HTTP_TARGET_HOST);
             Object token = context.getAttribute(REQUEST_SENT);
@@ -147,9 +147,9 @@ public class Demo1 {
                 // Stick some object into the context
                 context.setAttribute(REQUEST_SENT, Boolean.TRUE);
 
-                System.out.println("--------------");
-                System.out.println("Sending request to " + targetHost);
-                System.out.println("--------------");
+                System.out.println(Thread.currentThread().getId() + "--------------");
+                System.out.println(Thread.currentThread().getId() + "Sending request to " + targetHost);
+                System.out.println(Thread.currentThread().getId() + "--------------");
 
                 return new BasicHttpRequest("GET", "/");
             } else {

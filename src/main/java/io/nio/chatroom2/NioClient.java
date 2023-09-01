@@ -19,7 +19,7 @@ public class NioClient {
 
         Selector selector = Selector.open();
         // 连接客户端，可以理解成：客户端执行连接操作时，就会产生连接事件，此时这个事件还在socketChannel中。
-        clientSocketChannel.connect(new InetSocketAddress("127.0.0.1", 8899));
+        clientSocketChannel.connect(new InetSocketAddress("47.92.149.10", 80));
         // 将socketChannel注册到selector中，由selector来关联socketChannel的连接事件
         clientSocketChannel.register(selector, SelectionKey.OP_CONNECT);
 
