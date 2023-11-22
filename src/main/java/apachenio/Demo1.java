@@ -4,6 +4,7 @@ import org.apache.http.*;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.nio.DefaultClientIOEventDispatch;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.nio.NHttpConnection;
 import org.apache.http.nio.protocol.BufferingHttpClientHandler;
@@ -41,7 +42,7 @@ public class Demo1 {
                 .setParameter(CoreProtocolPNames.USER_AGENT, "HttpComponents/1.1");
 
         // 创建一个reactor，其中有两个工作线程
-        final ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(4, params);
+        final ConnectingIOReactor ioReactor = new DefaultConnectingIOReactor(2, params);
 
         // 创建一个http的处理器，可以配置http的拦截器
         HttpProcessor httpproc = new ImmutableHttpProcessor(new HttpRequestInterceptor[] {
@@ -52,7 +53,7 @@ public class Demo1 {
                 new RequestExpectContinue()});
 
         // 使用countDownLatch，当三个请求结束后，再执行requestCount.await() 后面的方法
-        CountDownLatch requestCount = new CountDownLatch(3);
+        CountDownLatch requestCount = new CountDownLatch(1);
 
         BufferingHttpClientHandler handler = new BufferingHttpClientHandler(
                 httpproc,
@@ -80,22 +81,17 @@ public class Demo1 {
         });
         t.start();
 
-        SessionRequest[] reqs = new SessionRequest[3];
-        reqs[0] = ioReactor.connect(
-                new InetSocketAddress("47.92.149.10", 80),
+
+        // SessionRequestCallback中添加一个HttpRequest后，可以支持请求到具体的服务。如果没有这段代码，则仅仅是与对方建立连接
+        HttpRequest reqeust = new BasicHttpEntityEnclosingRequest("post",
+                "/handler/datacenter/topv/mockQimen.json?data={\"hello\":\"world2\"}");
+
+        ioReactor.connect(
+                new InetSocketAddress("www.baidu.com", 80),
                 null,
-                new HttpHost("47.92.149.10"),
-                new MySessionRequestCallback(requestCount));
-        reqs[1] = ioReactor.connect(
-                new InetSocketAddress("www.taobao.com", 80),
-                null,
-                new HttpHost("www.taobao.com"),
-                new MySessionRequestCallback(requestCount));
-        reqs[2] = ioReactor.connect(
-                new InetSocketAddress("gw.api.taobao.com", 80),
-                null,
-                new HttpHost("gw.api.taobao.com"),
-                new MySessionRequestCallback(requestCount));
+                new HttpHost("www.baidu.com"),
+                new MySessionRequestCallback(requestCount, reqeust));
+
 
         // Block until all connections signal
         // completion of the request execution
@@ -124,14 +120,14 @@ public class Demo1 {
         }
 
         public void initalizeContext(final HttpContext context, final Object attachment) {
-            HttpHost targetHost = (HttpHost) attachment;
+            HttpHost targetHost = (HttpHost) attachment; // onConnected client和server链接上了，客户端向服务端发起握手请求
             context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, targetHost);
             System.out.println("initalizeContext");
         }
 
         public void finalizeContext(final HttpContext context) {
             Object flag = context.getAttribute(RESPONSE_RECEIVED);
-            if (flag == null) {
+            if (flag instanceof Boolean && (Boolean) flag) {
                 // Signal completion of the request execution
                 this.requestCount.countDown();
             }
@@ -194,9 +190,17 @@ public class Demo1 {
 
         private final CountDownLatch requestCount;
 
+        protected HttpRequest httpRequest;
+
         public MySessionRequestCallback(final CountDownLatch requestCount) {
             super();
             this.requestCount = requestCount;
+        }
+
+        public MySessionRequestCallback(final CountDownLatch requestCount, HttpRequest httpRequest) {
+            super();
+            this.requestCount = requestCount;
+            this.httpRequest = httpRequest;
         }
 
         public void cancelled(final SessionRequest request) {
@@ -208,12 +212,12 @@ public class Demo1 {
             System.out.println("Connect request completed. \n");
         }
 
-        public void failed(final SessionRequest request) {
+        public void failed(final SessionRequest request) { // 链接失败的回调。eg：找不到host、connect refused（端口没有相关服务）等等
             System.out.println("Connect request failed: " + request.getRemoteAddress());
             this.requestCount.countDown();
         }
 
-        public void timeout(final SessionRequest request) {
+        public void timeout(final SessionRequest request) { // 链接超时，根据connectTime的设置来定
             System.out.println("Connect request timed out: " + request.getRemoteAddress());
             this.requestCount.countDown();
         }
