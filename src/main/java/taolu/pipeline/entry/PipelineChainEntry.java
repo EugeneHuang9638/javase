@@ -22,8 +22,8 @@ public class PipelineChainEntry {
     public static void main(String[] args) {
         // 1、创建管道
         PipelineChain first = new StandardPipelineChain();
-        // 2、通过注册器  注册pipeLine到pipeLineChain中
-        PipelineChainRegistry.register(first, "test1", "test2");
+        // 2、通过注册器  注册pipeLine到pipeLineChain中 ==> 只会有两个pipe，因为test1重复了，pipeline对象的equals方法认为是同一个
+        PipelineChainRegistry.register(first, "test1", "test2", "test1");
         // 3、启动调用
         PipelineContext pipeLineContext = new StandardPipelineContext();
         first.execute(pipeLineContext);

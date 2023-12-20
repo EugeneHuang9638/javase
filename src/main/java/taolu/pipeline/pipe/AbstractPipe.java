@@ -30,7 +30,10 @@ public abstract class AbstractPipe implements Pipeline {
 
 
     /**
-     * 使用pipeLineCode来标识唯一性
+     * 使用pipeLineCode来标识唯一性。
+     * 正常来说equals方法就可以确定对象是否相同。但是防止一些工具类。
+     * 比如map.containKeys方法，里面会用到hashCode和equals方法
+     * 因此，最好也重写下hashCode方法
      * @return
      */
     @Override
