@@ -1,4 +1,4 @@
-package pipeline.context;
+package taolu.pipeline.context;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author muyang
  * @create 2023/12/20 18:52
  */
-public class StandardPipeLineContext implements PipeLineContext {
+public class StandardPipelineContext implements PipelineContext {
 
     private static Map<String, Object> parameters = new ConcurrentHashMap<>();
 

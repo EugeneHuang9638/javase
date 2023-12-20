@@ -1,11 +1,11 @@
-package pipeline.context;
+package taolu.pipeline.context;
 
 /**
  * 在管到链的上下文参数。在chain中的所有pipe都能共享这份context
  * @author muyang
  * @create 2023/12/20 18:50
  */
-public interface PipeLineContext {
+public interface PipelineContext {
 
     /**
      * 往context中添加key和value

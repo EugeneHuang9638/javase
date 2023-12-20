@@ -1,12 +1,12 @@
-package pipeline.pipe;
+package taolu.pipeline.pipe;
 
-import pipeline.context.PipeLineContext;
+import taolu.pipeline.context.PipelineContext;
 
 /**
  * @author muyang
  * @create 2023/12/20 18:59
  */
-public abstract class AbstractPipe implements PipeLine {
+public abstract class AbstractPipe implements Pipeline {
 
     protected String pipeLineCode;
 
@@ -15,8 +15,8 @@ public abstract class AbstractPipe implements PipeLine {
     }
 
     @Override
-    public void invoke(PipeLineContext pipeLineContext) {
-        // 是否忽略执行
+    public void invoke(PipelineContext pipeLineContext) {
+        // 是否忽略执行（由pipe自己控制，而不是由业务结果控制）
         if (ignoreIt(pipeLineContext)) {
             return;
         }
@@ -24,9 +24,9 @@ public abstract class AbstractPipe implements PipeLine {
         doInvoke(pipeLineContext);
     }
 
-    protected abstract void doInvoke(PipeLineContext pipeLineContext);
+    protected abstract void doInvoke(PipelineContext pipeLineContext);
 
-    protected abstract boolean ignoreIt(PipeLineContext pipeLineContext);
+    protected abstract boolean ignoreIt(PipelineContext pipeLineContext);
 
 
     /**
@@ -45,6 +45,6 @@ public abstract class AbstractPipe implements PipeLine {
      */
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof PipeLine && ((AbstractPipe)(obj)).pipeLineCode.equals(this.pipeLineCode);
+        return obj instanceof Pipeline && ((AbstractPipe)(obj)).pipeLineCode.equals(this.pipeLineCode);
     }
 }
