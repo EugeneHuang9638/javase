@@ -26,7 +26,7 @@ public class HeapMemory {
             Thread.sleep(100);
             list.add(new HeapMemory());
         }
-        // 手动触发fullgc
+        // 手动触发gc: 不一定会触发fullgc，system.gc只是触发了垃圾回收机制，最终会根据堆内存决定要不要执行young gc和full gc
 //        System.gc();
 //        System.out.println("end");
     }
