@@ -2,6 +2,7 @@ package jvm;
 
 
 import java.lang.ref.SoftReference;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -10,7 +11,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 自定义了一个lruMap，其中内部存储的软引用对象。
  * 它是一个linkedHashMap类型。
- * 与hashMap不同的是，它可以按照插入顺序或访问顺序来维护元素的位置
+ * 与hashMap不同的是，它可以按照插入顺序或访问顺序来维护元素的位置. 并且存储数据就是一个数组，数组内部没有链表。
+ *
  *
  */
 public class LRUMap<T> extends LinkedHashMap<String, SoftReference<T>> {
@@ -91,15 +93,22 @@ public class LRUMap<T> extends LinkedHashMap<String, SoftReference<T>> {
     }
 
     public static void main(String[] args) {
-        LRUMap<Integer> lruMap = new LRUMap<>(100);
-        for (int i = 0; i < 99; i++) {
-            lruMap.put(i + "", i);
+//        LRUMap<Integer> lruMap = new LRUMap<>(100);
+//        for (int i = 0; i < 99; i++) {
+//            lruMap.put(i + "", i);
+//        }
+//
+//        // 模拟访问一下key为3的缓存，此时会把它放在链表的最末尾
+//        lruMap.get("3");
+//        // 当执行此行代码时，会把key为1的元素remove掉（因为设置的内存最大值为5）
+//        lruMap.put("200", 200);
+//        System.out.println(1);
+
+        Map<String, Integer> hashMap = new HashMap(100);
+        for (int i = 0; i < 2000; i++) {
+            hashMap.put(i + "", i);
         }
 
-        // 模拟访问一下key为3的缓存，此时会把它放在链表的最末尾
-        lruMap.get("3");
-        // 当执行此行代码时，会把key为1的元素remove掉（因为设置的内存最大值为5）
-        lruMap.put("200", 200);
         System.out.println(1);
     }
 

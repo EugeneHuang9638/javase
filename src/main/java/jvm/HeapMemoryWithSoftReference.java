@@ -32,10 +32,12 @@ public class HeapMemoryWithSoftReference {
 
         System.out.println("=====================Starting=====================");
         List<SoftReference<HeapMemoryWithSoftReference>> list = new ArrayList();
+        List<HeapMemoryWithSoftReference> list2 = new ArrayList();
         for (int i = 0; i <= Integer.MAX_VALUE; i++) {
             // 循环1000次，每隔100毫秒往list添加一个DumpMemory对象， 最后使用jconsole或jvisualvm来定位main线程，来查看堆内存的变化
-            Thread.sleep(10);
+            Thread.sleep(5);
             list.add(new SoftReference<>(new HeapMemoryWithSoftReference()));
+//            list2.add(new HeapMemoryWithSoftReference());
             System.gc();
 
         }
