@@ -32,6 +32,12 @@ import io.netty.util.ReferenceCountUtil;
  */
 public class DiscardServerHandler extends ChannelInboundHandlerAdapter {
 
+    /**
+     * 只要是客户端发来的消息，都会执行这个方法
+     * @param ctx
+     * @param msg
+     * @throws Exception
+     */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         // ===================== 版本一：实现discard server

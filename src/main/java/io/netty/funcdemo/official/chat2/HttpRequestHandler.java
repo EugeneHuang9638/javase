@@ -24,8 +24,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     static {
         URL location = HttpRequestHandler.class.getProtectionDomain().getCodeSource().getLocation();
         try {
-            String path = location.toURI() + "WebsocketChatClient.html";
-            path = !path.contains("file:") ? path :path.substring(5);
+            String path = location.toURI() + "chat2/WebsocketChatClient.html";
+            path = !path.contains("file:") ? path : path.substring(5);
             INDEX = new File(path);
         } catch (URISyntaxException e) {
             throw new IllegalStateException("Unable to locate WebsocketChatClient.html", e);

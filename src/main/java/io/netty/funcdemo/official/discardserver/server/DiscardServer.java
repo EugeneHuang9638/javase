@@ -43,9 +43,12 @@ public class DiscardServer {
         EventLoopGroup bossGroup = new NioEventLoopGroup(); // (1)
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
+            // 窗机爱你服务端的启动对象，设置参数
             ServerBootstrap b = new ServerBootstrap();// (2)
             b.group(bossGroup, workerGroup)
+                    // 设置服务端通道实现类型
                     .channel(NioServerSocketChannel.class)// (3)
+                    // 设置
                     .childHandler(new ChannelInitializer<SocketChannel>() {// (4)
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {   // (4)
