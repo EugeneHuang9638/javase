@@ -11,7 +11,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
- * 扩展SimpleChannelInboundHandler用于处理FullHttpRequest信息
+ * 扩展SimpleChannelInboundHandler用于处理FullHttpRequest信息。
+ *
+ * 当url是以 ws 结束时，升级成socket协议来处理请求
  */
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> { // 1
 
@@ -52,25 +54,36 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             send100Continue(ctx); // 3
         }
 
+        // 读取默认的WebsocketChatClient.htm文件
         RandomAccessFile file = new RandomAccessFile(INDEX, "r"); // 4
-        HttpResponse response = new DefaultHttpResponse(request.getProtocolVersion(), HttpResponseStatus.OK);
-        response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/html; charset=UTF-8");
+        HttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
 
-        boolean keepAlive = HttpHeaders.isKeepAlive(request);
+        // 判断客户端的请求头中是否有keepalive标识
+        boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (keepAlive) { // 5
-            response.headers().set(HttpHeaders.Names.CONTENT_LENGTH, file.length());
-            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            // 如果有，则往响应头中添加文本内容的长度 & 告诉客户端，支持对当前连接使用keepalive功能
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, file.length());
+            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
+        // 把response写到客户端去，但还没有执行flush操作，因此，还没有真正的写到客户端中
         ctx.write(response); // 6
 
+        // todo：不懂SslHandler 与  DefaultFileRegion和ChunkedNioFile的区别
+
         if (ctx.pipeline().get(SslHandler.class) == null) { // 7
+            // 如果不是加密 也 不压缩，则直接使用nio文件的零拷贝来传输文件
             ctx.write(new DefaultFileRegion(file.getChannel(), 0, file.length()));
         } else {
+            // 如果要加密，则用nio的ChunkedNioFile来实现文件的传输
             ctx.write(new ChunkedNioFile(file.getChannel()));
         }
 
+        // 将EMPTY_LAST_CONTENT写到客户端去。todo：如果不写，会有什么问题？
+        // 猜测：这是传输文件的特定写法。如果要传输文件，就一定需要这么写。
         ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT); // 8
 
+        // 如果客户端没有指定keepalive，则把数据刷到客户端中之后执行关闭channel操作
         if (!keepAlive) {
             future.addListener(ChannelFutureListener.CLOSE); // 9
         }
