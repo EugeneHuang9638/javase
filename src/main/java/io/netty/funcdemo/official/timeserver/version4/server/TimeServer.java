@@ -29,6 +29,7 @@ public class TimeServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {// (4)
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
+                            // 因为我们目前实现的time协议，客户端链接服务端后，服务端把当前的时间返回给客户端。因此服务端需要做编码操作，所以这么加了一个TimeEncoder
                             ch.pipeline().addLast(new TimeEncoder(), new TimeServerHandler());
                         }
                     })

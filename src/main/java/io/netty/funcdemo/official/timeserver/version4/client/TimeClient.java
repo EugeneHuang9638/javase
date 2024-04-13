@@ -24,6 +24,8 @@ public class TimeClient {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline pipeline = ch.pipeline();
+                            // 因为我们目前实现的time协议，客户端链接服务端后，服务端把当前的时间返回给客户端。
+                            // 客户端需要接受服务端返回的数据，因此需要对报文做解码操作，因此，这里加了一个TimeDecoder解码器
                             pipeline.addLast(new TimeDecoder());
                             pipeline.addLast(new TimeClientHandler());
                         }
