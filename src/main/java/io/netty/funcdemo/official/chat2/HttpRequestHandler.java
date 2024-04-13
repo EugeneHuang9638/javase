@@ -80,7 +80,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
 
         // 将EMPTY_LAST_CONTENT写到客户端去。todo：如果不写，会有什么问题？
-        // 猜测：这是传输文件的特定写法。如果要传输文件，就一定需要这么写。
+        // 猜测：这是传输文件（大数据流）的特定写法。如果要传输文件，就一定需要这么写。  ==》 经过确认：猜测正确
         ChannelFuture future = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT); // 8
 
         // 如果客户端没有指定keepalive，则把数据刷到客户端中之后执行关闭channel操作
