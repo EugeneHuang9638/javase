@@ -9,19 +9,19 @@ public class ListNode {
         this.val = val;
     }
 
-    @Override
-    public String toString() {
+//    @Override
+//    public String toString() {
 //        return "ListNode{" +
 //                "val=" + val +
 //                ", next=" + next +
 //                '}';
-        StringBuilder sb = new StringBuilder();
-        sb.append(this.val);
-        ListNode currentNode = this;
-        while (currentNode.next != null) {
-            currentNode = currentNode.next;
-            sb.append("->").append(currentNode.val);
-        }
-        return sb.toString();
-    }
+////        StringBuilder sb = new StringBuilder();
+////        sb.append(this.val);
+////        ListNode currentNode = this;
+////        while (currentNode.next != null) {
+////            currentNode = currentNode.next;
+////            sb.append("->").append(currentNode.val);
+////        }
+////        return sb.toString();
+//    }
 }
