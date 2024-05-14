@@ -1,0 +1,1 @@
+demo?????https://waylau.com/netty-4-user-guide/Getting-Started/Speaking-in-POJO-instead-of-ByteBuf.html
