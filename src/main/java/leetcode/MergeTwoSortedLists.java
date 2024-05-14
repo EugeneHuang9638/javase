@@ -51,7 +51,7 @@ public class MergeTwoSortedLists {
      * 递归的本指就是一个单一的思想：
      *   我们来分析下这个题目：将两个有序链表合并，返回的新链表仍然有序
      *
-     *   链表这个数据结构不想数组，是连续的空间。它是分布在内存中的各个角落的，
+     *   链表这个数据结构不像数组，是连续的空间。它是分布在内存中的各个角落的，
      *   它是节点与节点之间的关联。
      *   其实链表就是一个对象：比如ListNode，只不过它内部有一些特殊的属性，比如
      *   next。next属性维护的其实是另外一个ListNode对象，也就是通过这些引用
@@ -235,7 +235,7 @@ public class MergeTwoSortedLists {
 
 
     /**
-     * 合并两个有序链表
+     * 合并两个有序链表，把listNode2合并到listNode1中
      * @param listNode1
      * @param listNode2
      */
