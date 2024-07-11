@@ -1,5 +1,7 @@
 package googleaviator.demo;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.googlecode.aviator.runtime.function.AbstractFunction;
 import com.googlecode.aviator.runtime.function.FunctionUtils;
@@ -7,9 +9,7 @@ import com.googlecode.aviator.runtime.type.AviatorBoolean;
 import com.googlecode.aviator.runtime.type.AviatorObject;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 自定义函数实现功能：目标值格式为1,2,3,4
@@ -26,9 +26,10 @@ public class TestAviatorExistElementMethod {
 
         Map<String, Object> env = new HashMap<>();
         env.put("appkey", "11234");
-        Object execute = AviatorEvaluator.execute("isExistElement(appkey, '11,34,223,1123,11234')", env);
+        Object execute = AviatorEvaluator.execute("isExistElement(appkey, ',1123,11234,')", env);
         System.out.println(execute instanceof Boolean);
         System.out.println(execute);
+        System.out.println(AviatorEvaluator.execute("true", env));
     }
 
     private static class IsExistElement extends AbstractFunction {
@@ -46,14 +47,10 @@ public class TestAviatorExistElementMethod {
             String candidateValue = FunctionUtils.getStringValue(arg1, env);
             // 如果env中没有对应的key，则返回本身
             String targetValues = FunctionUtils.getStringValue(arg2, env);
-            String[] split = StringUtils.split(targetValues, ",");
-            for (String val : split) {
-                if (Objects.equals(val, candidateValue)) {
-                    return AviatorBoolean.TRUE;
-                }
-            }
 
-            return AviatorBoolean.FALSE;
+            Set<String> targetValueSet = Sets.newHashSet(StringUtils.split(targetValues, ","));
+
+            return targetValueSet.contains(candidateValue) ? AviatorBoolean.TRUE : AviatorBoolean.FALSE;
         }
 
         @Override
