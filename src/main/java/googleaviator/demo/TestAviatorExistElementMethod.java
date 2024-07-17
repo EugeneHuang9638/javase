@@ -26,7 +26,8 @@ public class TestAviatorExistElementMethod {
 
         Map<String, Object> env = new HashMap<>();
         env.put("appkey", "11234");
-        Object execute = AviatorEvaluator.execute("isExistElement(appkey, ',1123,11234,')", env);
+        env.put("appkey", 11234L);
+        Object execute = AviatorEvaluator.execute("isExistElement(str(appkey), ',1123,11234,')", env);
         System.out.println(execute instanceof Boolean);
         System.out.println(execute);
         System.out.println(AviatorEvaluator.execute("true", env));
