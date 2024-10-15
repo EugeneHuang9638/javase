@@ -78,7 +78,7 @@ public class Demo1 {
                 System.out.println("Shutdown");
             }
 
-        });
+        }, "http nio thread.");
         t.start();
 
 
@@ -88,9 +88,9 @@ public class Demo1 {
 
         Long start = System.currentTimeMillis();
         ioReactor.connect(
-                new InetSocketAddress("www.baidu.com", 80),
+                new InetSocketAddress("www.taobao.com", 80),
                 null,
-                new HttpHost("www.baidu.com"),
+                new HttpHost("www.taobao.com"),
                 new MySessionRequestCallback(requestCount, reqeust));
         System.out.println("Thread: " + Thread.currentThread().getName() + ". 耗时：" + (System.currentTimeMillis() - start));
 
