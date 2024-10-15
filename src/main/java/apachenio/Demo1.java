@@ -61,7 +61,7 @@ public class Demo1 {
                 new DefaultConnectionReuseStrategy(),
                 params);
 
-//        handler.setEventListener(new EventLogger());
+        handler.setEventListener(new EventLogger());
 
         final IOEventDispatch ioEventDispatch = new DefaultClientIOEventDispatch(handler, params);
 
@@ -86,11 +86,13 @@ public class Demo1 {
         HttpRequest reqeust = new BasicHttpEntityEnclosingRequest("post",
                 "/handler/datacenter/topv/mockQimen.json?data={\"hello\":\"world2\"}");
 
+        Long start = System.currentTimeMillis();
         ioReactor.connect(
                 new InetSocketAddress("www.baidu.com", 80),
                 null,
                 new HttpHost("www.baidu.com"),
                 new MySessionRequestCallback(requestCount, reqeust));
+        System.out.println("Thread: " + Thread.currentThread().getName() + ". 耗时：" + (System.currentTimeMillis() - start));
 
 
         // Block until all connections signal
@@ -122,7 +124,7 @@ public class Demo1 {
         public void initalizeContext(final HttpContext context, final Object attachment) {
             HttpHost targetHost = (HttpHost) attachment; // onConnected client和server链接上了，客户端向服务端发起握手请求
             context.setAttribute(ExecutionContext.HTTP_TARGET_HOST, targetHost);
-            System.out.println("initalizeContext");
+            System.out.println("Thread: " + Thread.currentThread().getName() +"initalizeContext");
         }
 
         public void finalizeContext(final HttpContext context) {
@@ -131,7 +133,7 @@ public class Demo1 {
                 // Signal completion of the request execution
                 this.requestCount.countDown();
             }
-            System.out.println("finalizeContext");
+            System.out.println("Thread: " + Thread.currentThread().getName() +"finalizeContext");
         }
 
         public HttpRequest submitRequest(final HttpContext context) {
@@ -167,7 +169,7 @@ public class Demo1 {
                 System.out.println("--------------");
                 System.out.println(response.getStatusLine());
                 System.out.println("--------------");
-                System.out.println("Document length: " + content.length());
+                System.out.println("Thread: " + Thread.currentThread().getName() +"Document length: " + content.length());
                 System.out.println("--------------");
             } catch (IOException ex) {
                 System.err.println("I/O error: " + ex.getMessage());
@@ -204,21 +206,21 @@ public class Demo1 {
         }
 
         public void cancelled(final SessionRequest request) {
-            System.out.println("Connect request cancelled: " + request.getRemoteAddress());
+            System.out.println("Thread: " + Thread.currentThread().getName() +  "Connect request cancelled: " + request.getRemoteAddress());
             this.requestCount.countDown();
         }
 
         public void completed(final SessionRequest request) {
-            System.out.println("Connect request completed. \n");
+            System.out.println("Thread: " + Thread.currentThread().getName() +"：Connect request completed. \n");
         }
 
         public void failed(final SessionRequest request) { // 链接失败的回调。eg：找不到host、connect refused（端口没有相关服务）等等
-            System.out.println("Connect request failed: " + request.getRemoteAddress());
+            System.out.println("Thread: " + Thread.currentThread().getName() +"Connect request failed: " + request.getRemoteAddress());
             this.requestCount.countDown();
         }
 
         public void timeout(final SessionRequest request) { // 链接超时，根据connectTime的设置来定
-            System.out.println("Connect request timed out: " + request.getRemoteAddress());
+            System.out.println("Thread: " + Thread.currentThread().getName() + "Connect request timed out: " + request.getRemoteAddress());
             this.requestCount.countDown();
         }
 
@@ -234,7 +236,7 @@ public class Demo1 {
          * @param conn the connection.
          */
         public void connectionOpen(final NHttpConnection conn) {
-            System.out.println("Connection open: " + conn);
+            System.out.println("Thread: " + Thread.currentThread().getName() +"Connection open: " + conn);
         }
 
         /**
@@ -242,7 +244,7 @@ public class Demo1 {
          * @param conn the connection.
          */
         public void connectionTimeout(final NHttpConnection conn) {
-            System.out.println("Connection timed out: " + conn);
+            System.out.println("Thread: " + Thread.currentThread().getName() +"Connection timed out: " + conn);
         }
 
         /**
@@ -250,15 +252,15 @@ public class Demo1 {
          * @param conn the connection.
          */
         public void connectionClosed(final NHttpConnection conn) {
-            System.out.println("Connection closed: " + conn);
+            System.out.println("Thread: " + Thread.currentThread().getName() +"Connection closed: " + conn);
         }
 
         public void fatalIOException(final IOException ex, final NHttpConnection conn) {
-            System.err.println("I/O error: " + ex.getMessage());
+            System.err.println("Thread: " + Thread.currentThread().getName() +"I/O error: " + ex.getMessage());
         }
 
         public void fatalProtocolException(final HttpException ex, final NHttpConnection conn) {
-            System.err.println("HTTP error: " + ex.getMessage());
+            System.err.println("Thread: " + Thread.currentThread().getName() +"HTTP error: " + ex.getMessage());
         }
 
     }
