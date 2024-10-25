@@ -5,6 +5,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 生产者消费者：传统模式
+ *
  * 使用wait和notify实现一个消息队列，
  * 生产者1秒生产一个消息
  * 当队列的元素达到10个时，生产者停止生产，通知消费者消费消息
